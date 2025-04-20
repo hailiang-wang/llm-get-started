@@ -1,3 +1,4 @@
+# https://mer.vin/2025/01/ollama-reasoning-chatbot-code/
 import ollama
 import gradio as gr
 
@@ -54,5 +55,5 @@ with gr.Blocks() as demo:
     )
     clear.click(lambda: None, None, chatbot, queue=False)
 
-if __name__ == "__main__":
+if __name__ == "__main__":  
     demo.launch()
