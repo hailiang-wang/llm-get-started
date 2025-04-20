@@ -41,6 +41,8 @@ python app.py
 
 Based on [blog](https://dev.to/ajmal_hasan/setting-up-ollama-running-deepseek-r1-locally-for-a-powerful-rag-system-4pd4) and [code](https://github.com/Ajmal0197/DeepseekOllamaRag/blob/main/app.py).
 
+First, make sure works `DeepSeek R1` above are done, because Langchain RAG App below depends on `DeepSeek R1`.
+
 ```
 cd langchain
 pip install -r requirements.txt
