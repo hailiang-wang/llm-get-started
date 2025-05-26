@@ -21,7 +21,7 @@ def chat_with_ollama(message, history):
     messages.append({"role": "user", "content": message})
     
     completion = ollama.chat(
-        model="deepseek-r1:latest",
+        model="deepseek-r1:14b",
         messages=messages,
         stream=True  # Enable streaming
     )

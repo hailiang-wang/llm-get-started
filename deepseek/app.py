@@ -4,7 +4,7 @@ import ollama
 
 # Create streaming completion
 completion = ollama.chat(
-    model="deepseek-r1:latest",
+    model="deepseek-r1:14b",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Why sky is blue?"}

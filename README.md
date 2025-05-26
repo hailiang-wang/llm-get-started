@@ -18,8 +18,8 @@ Code - https://mer.vin/2025/01/ollama-reasoning-chatbot-code/
 
 ```
 # download deepseek model and launch
-ollama pull deepseek-r1
-ollama run deepseek-r1
+ollama pull deepseek-r1:14b
+ollama run deepseek-r1:14b
 ollama ps # check running status
 
 cd deepseek
@@ -37,7 +37,7 @@ python app.py
 ![alt text](assets/media/1745139758807.png)
 
 
-## Langchain
+## Langchain for RAG
 
 Based on [blog](https://dev.to/ajmal_hasan/setting-up-ollama-running-deepseek-r1-locally-for-a-powerful-rag-system-4pd4) and [code](https://github.com/Ajmal0197/DeepseekOllamaRag/blob/main/app.py).
 

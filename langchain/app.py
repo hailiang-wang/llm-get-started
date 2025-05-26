@@ -4,7 +4,7 @@ import streamlit as st
 from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
 from langchain.chains.llm import LLMChain
@@ -112,11 +112,14 @@ if uploaded_file is not None:
 
     # Create vector store and retriever
     st.subheader("🔍 Creating embeddings and setting up the retriever...")
-    vector = FAISS.from_documents(documents, embedder)
+    vector = InMemoryVectorStore(embedder) # https://python.langchain.com/docs/concepts/vectorstores/
+    print("documents", documents[0])
+    vector.add_documents(documents=documents)
+
     retriever = vector.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
     # Define the LLM and the prompt
-    llm = OllamaLLM(model="deepseek-r1:latest")
+    llm = OllamaLLM(model="deepseek-r1:14b")
     prompt = """
     1. Use the following pieces of context to answer the question at the end.
     2. If you don't know the answer, just say that "I don't know" but don't make up an answer on your own.\n
