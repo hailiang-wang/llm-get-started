@@ -1,3 +1,5 @@
+env3
+log5
 langchain==0.3.16
 langchain-community==0.3.16
 langchain-core==0.3.32

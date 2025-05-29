@@ -1,15 +1,16 @@
 # code based on https://raw.githubusercontent.com/Ajmal0197/DeepseekOllamaRag/refs/heads/main/app.py
+import os
+curdir = os.path.dirname(os.path.abspath(__file__))
 
-import streamlit as st
+import env3
 from langchain_community.document_loaders import PDFPlumberLoader
-from langchain_experimental.text_splitter import SemanticChunker
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_ollama import OllamaLLM
-from langchain.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
-from langchain.chains.combine_documents.stuff import StuffDocumentsChain
-from langchain.chains import RetrievalQA
+import streamlit as st
+
+from qa_model import get_qa_model
+
+
+# Get env
+ENV = env3.read_env(os.path.join(curdir, ".env"))
 
 # Define color palette with improved contrast
 primary_color = "#007BFF"  # Bright blue for primary buttons
@@ -104,50 +105,8 @@ if uploaded_file is not None:
 
     # Split the document into chunks
     st.subheader("📚 Splitting the document into chunks...")
-    text_splitter = SemanticChunker(HuggingFaceEmbeddings())
-    documents = text_splitter.split_documents(docs)
 
-    # Instantiate the embedding model
-    embedder = HuggingFaceEmbeddings()
-
-    # Create vector store and retriever
-    st.subheader("🔍 Creating embeddings and setting up the retriever...")
-    vector = InMemoryVectorStore(embedder) # https://python.langchain.com/docs/concepts/vectorstores/
-    print("documents", documents[0])
-    vector.add_documents(documents=documents)
-
-    retriever = vector.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-
-    # Define the LLM and the prompt
-    llm = OllamaLLM(model="deepseek-r1:14b")
-    prompt = """
-    1. Use the following pieces of context to answer the question at the end.
-    2. If you don't know the answer, just say that "I don't know" but don't make up an answer on your own.\n
-    3. Keep the answer crisp and limited to 3,4 sentences.
-    Context: {context}
-    Question: {question}
-    Helpful Answer:"""
-    QA_CHAIN_PROMPT = PromptTemplate.from_template(prompt)
-
-    # Define the document and combination chains
-    llm_chain = LLMChain(llm=llm, prompt=QA_CHAIN_PROMPT, verbose=True)
-    document_prompt = PromptTemplate(
-        input_variables=["page_content", "source"],
-        template="Context:\ncontent:{page_content}\nsource:{source}",
-    )
-    combine_documents_chain = StuffDocumentsChain(
-        llm_chain=llm_chain,
-        document_variable_name="context",
-        document_prompt=document_prompt,
-        verbose=True
-    )
-
-    qa = RetrievalQA(
-        combine_documents_chain=combine_documents_chain,
-        retriever=retriever,
-        verbose=True,
-        return_source_documents=True
-    )
+    qa = get_qa_model(docs=docs, ollama_model=ENV.get("DEEKSEEK_MODEL"))
 
     # Question input and response display
     st.header("❓ Ask a Question")

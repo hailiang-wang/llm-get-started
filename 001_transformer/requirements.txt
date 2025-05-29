@@ -1,0 +1,23 @@
+--find-links https://download.pytorch.org/whl/torch/
+
+# common
+python-dotenv
+
+# project specific
+numpy==2.2.5
+pandas==2.2.3
+## all versions https://download.pytorch.org/whl/torch/
+## torch==2.4.1+cu121 , and torchtext==0.18.0 and torchdata==0.9.0 hold together, check https://stackoverflow.com/questions/78791245/oserror-winerror-127-the-specified-procedure-could-not-be-found-when-import, and https://github.com/opendatalab/MinerU/issues/445
+## https://pytorch.org/text/stable/index.html, Torchtext is deprecated and the last released version will be 0.18 (this one).
+torch==2.6.0+cu124
+touchtext==0.0.6
+torchinfo
+
+spacy==3.8.5
+altair==5.5.0
+altair_viewer==0.4.0
+flake8
+black
+GPUtil
+wandb
+tqdm
