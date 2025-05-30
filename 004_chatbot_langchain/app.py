@@ -82,9 +82,7 @@ if "prev_context_size" not in st.session_state or st.session_state.prev_context_
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-'''
-LangChain LLM Setup
-'''
+# ---- LangChain LLM Setup ---- #
 # https://python.langchain.com/docs/tutorials/chatbot/
 llm = ChatOllama(model=MODEL, streaming=True)
 messages = []
@@ -97,15 +95,14 @@ prompt_template = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+            """1. You are a helpful assistant. Answer all questions to the best of your ability in {language}.\n
+            2. If you don't know the answer, just say that "I don't know" but don't make up an answer on your own.\n
+            3. Keep the answer crisp and limited to 3,4 sentences. \n""",
         ),
         MessagesPlaceholder(variable_name="messages"),
     ]
 )
 
-'''
-Define the function that calls the model
-'''
 # Managing Conversation History
 trimmer = trim_messages(
     max_tokens=200,
@@ -116,6 +113,7 @@ trimmer = trim_messages(
     start_on="human",
 )
 
+# ---- Define the function that calls the model ---- #
 def call_model(state: State):
     state["messages"] = trimmer.invoke(state["messages"])
     prompt = prompt_template.invoke(state)
