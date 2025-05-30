@@ -20,7 +20,7 @@ cd llm-get-started
 | --- | --- | --- |
 | 001_transformer | [README](./001_transformer/README.md) | Transformer basics, original algorithm fundamentals for Transformer Model. | 
 | 002_deepseek | [README](./002_deepseek/README.md)  | Run inferences and reasoning with DeepSeek R1. | 
-| 003_langchain | [README](./003_langchain/README.md) | Langchain for RAG | 
+| 003_rag_langchain | [README](./003_rag_langchain/README.md) | Langchain for RAG (Retrieval-Augmented Generation) | 
 
 
 ## FAQs
