@@ -105,6 +105,9 @@ if prompt := st.chat_input("Say something"):
     # Trim chat history before generating response
     trim_memory()
 
+    print("what is memory")
+    print(st.session_state.memory)
+
     # ---- Get AI Response (Streaming) ---- #
     with st.chat_message("assistant"):
         response_container = st.empty()
