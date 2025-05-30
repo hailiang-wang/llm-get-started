@@ -28,16 +28,31 @@ if sys.version_info[0] < 3:
 else:
     unicode = str
 
+from typing import Sequence
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
+from typing_extensions import Annotated, TypedDict
+
 # Get ENV
 import env3
 ENV = env3.read_env()
 
 import streamlit as st
 from langchain_ollama import ChatOllama
-from langchain.schema import HumanMessage, AIMessage
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
+from langchain_core.messages import SystemMessage, trim_messages
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import START, MessagesState, StateGraph
+
+class State(TypedDict):
+    '''
+    Note that we have added a new language input to the prompt. Our application now has two parameters-- the input messages and language. We should update our application's state to reflect this.
+    https://python.langchain.com/docs/tutorials/chatbot/
+    '''
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    language: str
+
 
 # ---- Streamlit Setup ---- #
 st.set_page_config(layout="wide")
@@ -57,7 +72,6 @@ CONTEXT_SIZE = st.sidebar.number_input("Context Size", min_value=1024, max_value
 # ---- Function to Clear Memory When Settings Change ---- #
 def clear_memory():
     st.session_state.chat_history = []
-    st.session_state.memory = ConversationBufferMemory(return_messages=True)  # Reset memory
 
 # Clear memory if settings are changed
 if "prev_context_size" not in st.session_state or st.session_state.prev_context_size != CONTEXT_SIZE:
@@ -68,19 +82,54 @@ if "prev_context_size" not in st.session_state or st.session_state.prev_context_
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "memory" not in st.session_state:
-    st.session_state.memory = ConversationBufferMemory(return_messages=True)
-
-# ---- LangChain LLM Setup ---- #
+'''
+LangChain LLM Setup
+'''
+# https://python.langchain.com/docs/tutorials/chatbot/
 llm = ChatOllama(model=MODEL, streaming=True)
+messages = []
+
+# Define a new graph
+workflow = StateGraph(state_schema=State)
 
 # ---- Prompt Template ---- #
-prompt_template = PromptTemplate(
-    input_variables=["history", "human_input"],
-    template="{history}\nUser: {human_input}\nAssistant:"
+prompt_template = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a helpful assistant. Answer all questions to the best of your ability in {language}.",
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
 )
 
-chain = LLMChain(llm=llm, prompt=prompt_template, memory=st.session_state.memory)
+'''
+Define the function that calls the model
+'''
+# Managing Conversation History
+trimmer = trim_messages(
+    max_tokens=200,
+    strategy="last",
+    token_counter=llm,
+    include_system=True,
+    allow_partial=False,
+    start_on="human",
+)
+
+def call_model(state: State):
+    state["messages"] = trimmer.invoke(state["messages"])
+    prompt = prompt_template.invoke(state)
+    response = llm.invoke(prompt)
+
+    return {"messages": response}
+
+# Define the (single) node in the graph
+workflow.add_edge(START, "model")
+workflow.add_node("model", call_model)
+
+# Add memory
+memory = MemorySaver()
+app = workflow.compile(checkpointer=memory)
 
 # ---- Display Chat History ---- #
 for msg in st.session_state.chat_history:
@@ -105,19 +154,34 @@ if prompt := st.chat_input("Say something"):
     # Trim chat history before generating response
     trim_memory()
 
-    print("what is memory")
-    print(st.session_state.memory)
+    # Understand memory object
+    # https://github.com/hailiang-wang/llm-get-started/issues/3#issuecomment-2922227938
+    # print("what is memory")
+    # print(st.session_state.memory)
 
     # ---- Get AI Response (Streaming) ---- #
     with st.chat_message("assistant"):
         response_container = st.empty()
         full_response = ""
 
-        for chunk in chain.stream({"human_input": prompt}):
-            if isinstance(chunk, dict) and "text" in chunk:
-                text_chunk = chunk["text"]
-                full_response += text_chunk
-                response_container.markdown(full_response)
+        config = {"configurable": {"thread_id": "abc123"}}
+        language = "Chinese"
+
+        input_messages = messages + [HumanMessage(prompt)]
+        # if getting reply directly, without streaming
+        # output = app.invoke({"messages": input_messages}, config)
+        # content='<think>\n\n</think>\n\nHi Bob! Welcome. How can I assist you today? 😊' additional_kwargs={} response_metadata={'model': 'deepseek-r1:14b', 'created_at': '2025-05-30T12:34:44.6516712Z', 'done': True, 'done_reason': 'stop', 'total_duration': 10507775500, 'load_duration': 4320399000, 'prompt_eval_count': 8, 'prompt_eval_duration': 1645474100, 'eval_count': 19, 'eval_duration': 4541116600, 'message': Message(role='assistant', content='', images=None, tool_calls=None)} id='run-3cfa31e0-9663-4dc5-a0df-2d255a5bfdca-0' usage_metadata={'input_tokens': 8, 'output_tokens': 19, 'total_tokens': 27}
+
+        for chunk, metadata in app.stream(
+                {"messages": input_messages, "language": language},
+                config,
+                stream_mode="messages",
+            ):
+                if isinstance(chunk, AIMessage):  # Filter to just model responses
+                    text_chunk = chunk.content
+                    full_response += text_chunk
+                    response_container.markdown(full_response)
+
 
     # Store response in session_state
     st.session_state.chat_history.append({"role": "assistant", "content": full_response})
