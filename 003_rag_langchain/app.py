@@ -6,7 +6,7 @@ import env3
 from langchain_community.document_loaders import PDFPlumberLoader
 import streamlit as st
 
-from qa_model import get_qa_model
+from rag import get_qa_model
 
 
 # Get env
