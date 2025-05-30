@@ -6,8 +6,8 @@ import env3
 from langchain_community.document_loaders import PDFPlumberLoader
 import streamlit as st
 
-from rag import get_qa_model
-
+# from rag2 import get_qa_model # HuggingFaceEmbeddings
+from rag import get_qa_model # chatopera/Synonyms Embeddings
 
 # Get env
 ENV = env3.read_env(os.path.join(curdir, ".env"))
@@ -70,30 +70,30 @@ st.markdown("""
 
 
 # App title
-st.title("📄 Build a RAG System with DeepSeek R1 & Ollama")
+st.title("📄 RAG Service 使用 DeepSeek R1, Ollama, Synonyms, LangChain 和 Streamlit")
 
 # Sidebar for instructions and settings
 with st.sidebar:
-    st.header("Instructions")
+    st.header("说明")
     st.markdown("""
-    1. Upload a PDF file using the uploader below.
-    2. Ask questions related to the document.
-    3. The system will retrieve relevant content and provide a concise answer.
+    1. 上传 PDF 文件进行分析检索.
+    2. 提出和 PDF 文件有关的问题.
+    3. 本服务会利用 RAG 召回，并结合提示词，使用大语言模型推理答案.
     """)
 
-    st.header("Settings")
+    st.header("配置")
     st.markdown("""
-    - **Embedding Model**: embeddings-zh（https://pypi.org/project/embeddings-zh/）
+    - **Embedding Model**: [Synonyms 中文近义词模型](https://github.com/chatopera/Synonyms/)
     - **Retriever Type**: Similarity Search
     - **LLM**: DeepSeek R1 (Ollama)
     """)
 
 # Main file uploader section
-st.header("📁 Upload a PDF Document")
-uploaded_file = st.file_uploader("Upload your PDF file here", type="pdf")
+st.header("📁 上传一个 PDF 文件")
+uploaded_file = st.file_uploader("上传", type="pdf")
 
 if uploaded_file is not None:
-    st.success("PDF uploaded successfully! Processing...")
+    st.success("上传成功! 正在处理该 PDF 文件 ...")
 
     # Save the uploaded file
     with open("temp.pdf", "wb") as f:
@@ -104,22 +104,22 @@ if uploaded_file is not None:
     docs = loader.load()
 
     # Split the document into chunks
-    st.subheader("📚 Splitting the document into chunks...")
+    st.subheader("📚 将该文件分片 ...")
 
-    qa = get_qa_model(docs=docs, ollama_model=ENV.get("DEEKSEEK_MODEL"))
+    qa = get_qa_model(docs=docs, ollama_model=ENV.get("DEEKSEEK_MODEL", "deepseek-r1:14b"))
 
     # Question input and response display
-    st.header("❓ Ask a Question")
-    user_input = st.text_input("Type your question related to the document:")
+    st.header("❓ 发送问题")
+    user_input = st.text_input("输入一个和该 PDF 文件有关的问题:")
 
     if user_input:
-        with st.spinner("Processing your query..."):
+        with st.spinner("正在推理 ..."):
             try:
                 response = qa(user_input)["result"]
-                st.success("✅ Response:")
+                st.success("✅ 返回结果:")
                 st.write(response)
             except Exception as e:
                 st.error(f"An error occurred: {e}")
 else:
-    st.info("Please upload a PDF file to start.")
+    st.info("上传一个 PDF 文件，程序将完成分析，然后提供检索服务。")
 

@@ -13,7 +13,3 @@ pdfplumber==0.11.6
 # fix error, pydantic.errors.PydanticUserError: `OllamaLLM` is not fully defined; you should define `BaseCache`, then call `OllamaLLM.model_rebuild()`.
 # https://blog.csdn.net/WB231444/article/details/144540647
 pydantic==2.9.2
-#tiktoken==0.8.0
-#tokenizers==0.21.0
-#transformers==4.48.1
-#pen_text_embeddings==1.0.4
