@@ -1,5 +1,6 @@
 env3
 log5
+embeddings_zh==0.0.3
 langchain==0.3.16
 langchain-community==0.3.16
 langchain-core==0.3.32

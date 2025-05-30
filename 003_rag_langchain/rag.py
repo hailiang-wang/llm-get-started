@@ -27,7 +27,7 @@ if sys.version_info[0] < 3:
 else:
     unicode = str
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
@@ -43,17 +43,21 @@ def get_qa_model(docs, ollama_model):
     '''
     Get a QA Model
     '''
+    from embeddings_zh import EmbeddingsZh
+
     logger.info("[get_qa_model] ollama_model %s", ollama_model)
     # Create vector store and retriever
-    print("🔍 Creating embeddings and setting up the retriever...")
-    text_splitter = SemanticChunker(HuggingFaceEmbeddings())
+    logger.info("🔍 Creating embeddings and setting up the retriever, doc len %d ..." % len(docs))
+    # print(docs[0])
+    text_splitter = SemanticChunker(EmbeddingsZh())
     documents = text_splitter.split_documents(docs)
 
+
     # Instantiate the embedding model
-    embedder = HuggingFaceEmbeddings()
+    embedder = EmbeddingsZh()
 
     vector = InMemoryVectorStore(embedder) # https://python.langchain.com/docs/concepts/vectorstores/
-    print("documents", documents[0])
+    # print("documents", documents[0])
     vector.add_documents(documents=documents)
 
     retriever = vector.as_retriever(search_type="similarity", search_kwargs={"k": 3})

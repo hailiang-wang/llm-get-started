@@ -83,7 +83,7 @@ with st.sidebar:
 
     st.header("Settings")
     st.markdown("""
-    - **Embedding Model**: HuggingFace
+    - **Embedding Model**: embeddings-zh（https://pypi.org/project/embeddings-zh/）
     - **Retriever Type**: Similarity Search
     - **LLM**: DeepSeek R1 (Ollama)
     """)
