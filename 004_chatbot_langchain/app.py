@@ -13,7 +13,8 @@
 
 """
 Building a Local AI Chatbot Using Streamlit, LangChain, and Ollama
-https://medium.com/@Shamimw/building-a-local-ai-chatbot-using-streamlit-langchain-and-ollama-484b82083988
+1) Original code borrowed from https://medium.com/@Shamimw/building-a-local-ai-chatbot-using-streamlit-langchain-and-ollama-484b82083988
+2) Leverage most recent APIs https://python.langchain.com/docs/tutorials/chatbot/
 """
 __copyright__ = "Copyright (c) 2025 . All Rights Reserved"
 __author__ = "Hai Liang Wang"
@@ -91,21 +92,20 @@ messages = []
 workflow = StateGraph(state_schema=State)
 
 # ---- Prompt Template ---- #
+# https://python.langchain.com/api_reference/core/prompts/langchain_core.prompts.chat.ChatPromptTemplate.html
 prompt_template = ChatPromptTemplate.from_messages(
     [
-        (
-            "system",
-            """1. You are a helpful assistant. Answer all questions to the best of your ability in {language}.\n
+        SystemMessage(content="""1. You are a helpful assistant. Answer all questions to the best of your ability in {language}.\n
             2. If you don't know the answer, just say that "I don't know" but don't make up an answer on your own.\n
-            3. Keep the answer crisp and limited to 3,4 sentences. \n""",
-        ),
+            3. Keep the answer crisp and limited to 3,4 sentences. \n"""),
         MessagesPlaceholder(variable_name="messages"),
     ]
 )
 
 # Managing Conversation History
+# https://python.langchain.com/api_reference/core/messages/langchain_core.messages.utils.trim_messages.html
 trimmer = trim_messages(
-    max_tokens=200,
+    max_tokens=200, # Max token count of trimmed messages.
     strategy="last",
     token_counter=llm,
     include_system=True,
@@ -125,9 +125,9 @@ def call_model(state: State):
 workflow.add_edge(START, "model")
 workflow.add_node("model", call_model)
 
-# Add memory
-memory = MemorySaver()
-app = workflow.compile(checkpointer=memory)
+# Add A checkpoint saver object or flag. If provided, this Checkpointer serves as a fully versioned "short-term memory" for the graph, allowing it to be paused, resumed, and replayed from any point. If None, it may inherit the parent graph's checkpointer when used as a subgraph. If False, it will not use or inherit any checkpointer.
+checkpoints_saver = MemorySaver()
+app = workflow.compile(checkpointer=checkpoints_saver)
 
 # ---- Display Chat History ---- #
 for msg in st.session_state.chat_history:
