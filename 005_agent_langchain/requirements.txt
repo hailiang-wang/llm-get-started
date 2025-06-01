@@ -1,5 +1,5 @@
 # https://github.com/hailiang-wang/python-env3
-env3==0.0.5
+env3
 # https://github.com/hailiang-wang/python-log5
 log5
 

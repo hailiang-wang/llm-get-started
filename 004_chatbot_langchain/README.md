@@ -1,4 +1,4 @@
-# chatbot with LangChain
+# Chatbot built with LangChain
 
 Borrow code from [Shamimw@medium.com](https://medium.com/@Shamimw/building-a-local-ai-chatbot-using-streamlit-langchain-and-ollama-484b82083988) originally.
 
