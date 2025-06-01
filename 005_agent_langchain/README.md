@@ -12,7 +12,7 @@
 
 ## Start
 
-First, install ollama, next, run `ollama pull mistral-nemo:latest`
+First, install ollama, next, run `ollama pull mistral-nemo:latest`, checkout [mistral-nemo](https://mistral.ai/news/mistral-nemo).
 
 At last, run
 ```
