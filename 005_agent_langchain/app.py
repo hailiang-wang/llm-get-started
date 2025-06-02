@@ -42,6 +42,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from langchain_community.tools.tavily_search import TavilySearchResults
 
+
 class State(TypedDict):
     '''
     Note that we have added a new language input to the prompt. Our application now has two parameters-- the input messages and language. We should update our application's state to reflect this.
@@ -82,7 +83,8 @@ if "chat_history" not in st.session_state:
 # ---- LangChain LLM Setup ---- #
 # https://python.langchain.com/docs/tutorials/chatbot/
 print("Use model", MODEL)
-llm = ChatOllama(model=MODEL, streaming=True)
+# http://host-one:11434;http://host-two:11434
+llm = ChatOllama(model=MODEL, streaming=True, base_url=ENV.get("OLLAMA_BASE_URL", "http://localhost:11434"))
 search = TavilySearchResults(max_results=2)
 tools = [search]
 checkpoints_saver = MemorySaver()
