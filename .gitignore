@@ -4,7 +4,7 @@
 *.swo
 *.sublime-*
 *.pyc
-jmeter.log
+*.log
 __pycache__
 tmp/
 package-lock.json

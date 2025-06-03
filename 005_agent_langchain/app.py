@@ -30,6 +30,9 @@ if sys.version_info[0] < 3:
 else:
     unicode = str
 
+import log5
+logger = log5.get_logger(log5.LN(__name__), output_mode=log5.OUTPUT_STDOUT)
+
 from typing import Sequence
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -82,14 +85,14 @@ if "chat_history" not in st.session_state:
 
 # ---- LangChain LLM Setup ---- #
 # https://python.langchain.com/docs/tutorials/chatbot/
-print("Use model", MODEL)
 # http://host-one:11434;http://host-two:11434
-llm = ChatOllama(model=MODEL, streaming=True, base_url=ENV.get("OLLAMA_BASE_URL", "http://localhost:11434"))
+base_url = ENV.get("OLLAMA_BASE_URL", "http://localhost:11434")
+logger.info("Use model %s, base_url %s", MODEL, base_url)
+llm = ChatOllama(model=MODEL, streaming=True, base_url=base_url)
 search = TavilySearchResults(max_results=2)
 tools = [search]
 checkpoints_saver = MemorySaver()
 agent_executor = create_react_agent(llm, tools, checkpointer=checkpoints_saver)
-messages = []
 
 # ---- Display Chat History ---- #
 for msg in st.session_state.chat_history:
@@ -127,13 +130,12 @@ if prompt := st.chat_input("Say something"):
         config = {"configurable": {"thread_id": "abc123"}}
         language = "Chinese"
 
-        input_messages = messages + [HumanMessage(prompt)]
         # if getting reply directly, without streaming
         # output = app.invoke({"messages": input_messages}, config)
         # content='<think>\n\n</think>\n\nHi Bob! Welcome. How can I assist you today? 😊' additional_kwargs={} response_metadata={'model': 'deepseek-r1:14b', 'created_at': '2025-05-30T12:34:44.6516712Z', 'done': True, 'done_reason': 'stop', 'total_duration': 10507775500, 'load_duration': 4320399000, 'prompt_eval_count': 8, 'prompt_eval_duration': 1645474100, 'eval_count': 19, 'eval_duration': 4541116600, 'message': Message(role='assistant', content='', images=None, tool_calls=None)} id='run-3cfa31e0-9663-4dc5-a0df-2d255a5bfdca-0' usage_metadata={'input_tokens': 8, 'output_tokens': 19, 'total_tokens': 27}
 
         for chunk, metadata in agent_executor.stream(
-                {"messages": input_messages, "language": language},
+                {"messages": st.session_state.chat_history, "language": language},
                 config,
                 stream_mode="messages",
             ):
@@ -142,9 +144,6 @@ if prompt := st.chat_input("Say something"):
                 text_chunk = chunk.content
                 full_response += text_chunk
                 response_container.markdown(full_response)
-
+        
     # Store response in session_state
     st.session_state.chat_history.append({"role": "assistant", "content": full_response})
-
-    # Trim history after storing the response
-    trim_memory()

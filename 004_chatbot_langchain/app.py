@@ -67,7 +67,7 @@ model_options = ["deepseek-r1:14b"]
 MODEL = st.sidebar.selectbox("Choose a Model", model_options, index=0)
 
 # Inputs for max history and context size
-MAX_HISTORY = st.sidebar.number_input("Max History", min_value=1, max_value=100, value=2, step=1)
+MAX_HISTORY = st.sidebar.number_input("Max History", min_value=1, max_value=100, value=10, step=1)
 CONTEXT_SIZE = st.sidebar.number_input("Context Size", min_value=1024, max_value=16384, value=8192, step=1024)
 
 # ---- Function to Clear Memory When Settings Change ---- #
@@ -86,7 +86,6 @@ if "chat_history" not in st.session_state:
 # ---- LangChain LLM Setup ---- #
 # https://python.langchain.com/docs/tutorials/chatbot/
 llm = ChatOllama(model=MODEL, streaming=True)
-messages = []
 
 # Define a new graph
 workflow = StateGraph(state_schema=State)
@@ -165,13 +164,12 @@ if prompt := st.chat_input("Say something"):
         config = {"configurable": {"thread_id": "abc123"}}
         language = "Chinese"
 
-        input_messages = messages + [HumanMessage(prompt)]
         # if getting reply directly, without streaming
         # output = app.invoke({"messages": input_messages}, config)
         # content='<think>\n\n</think>\n\nHi Bob! Welcome. How can I assist you today? 😊' additional_kwargs={} response_metadata={'model': 'deepseek-r1:14b', 'created_at': '2025-05-30T12:34:44.6516712Z', 'done': True, 'done_reason': 'stop', 'total_duration': 10507775500, 'load_duration': 4320399000, 'prompt_eval_count': 8, 'prompt_eval_duration': 1645474100, 'eval_count': 19, 'eval_duration': 4541116600, 'message': Message(role='assistant', content='', images=None, tool_calls=None)} id='run-3cfa31e0-9663-4dc5-a0df-2d255a5bfdca-0' usage_metadata={'input_tokens': 8, 'output_tokens': 19, 'total_tokens': 27}
 
         for chunk, metadata in app.stream(
-                {"messages": input_messages, "language": language},
+                {"messages": st.session_state.chat_history, "language": language},
                 config,
                 stream_mode="messages",
             ):
@@ -180,9 +178,5 @@ if prompt := st.chat_input("Say something"):
                     full_response += text_chunk
                     response_container.markdown(full_response)
 
-
     # Store response in session_state
     st.session_state.chat_history.append({"role": "assistant", "content": full_response})
-
-    # Trim history after storing the response
-    trim_memory()
