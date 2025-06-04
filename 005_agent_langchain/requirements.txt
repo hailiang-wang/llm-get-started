@@ -9,3 +9,4 @@ langchain-community==0.3.16
 langchain-ollama==0.2.2
 ollama==0.4.8
 langgraph==0.4.7
+chatopera==2.2.2

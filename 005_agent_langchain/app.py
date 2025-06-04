@@ -43,7 +43,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_chatopera import ChatoperaBotResults, ChatoperaBotAPIWrapper
 
 
 class State(TypedDict):
@@ -89,8 +89,9 @@ if "chat_history" not in st.session_state:
 base_url = ENV.get("OLLAMA_BASE_URL", "http://localhost:11434")
 logger.info("Use model %s, base_url %s", MODEL, base_url)
 llm = ChatOllama(model=MODEL, streaming=True, base_url=base_url)
-search = TavilySearchResults(max_results=2)
-tools = [search]
+chatopera_bot_api = ChatoperaBotAPIWrapper()
+chatopera_bot = ChatoperaBotResults(max_results=2, api_wrapper=chatopera_bot_api)
+tools = [chatopera_bot]
 checkpoints_saver = MemorySaver()
 agent_executor = create_react_agent(llm, tools, checkpointer=checkpoints_saver)
 
