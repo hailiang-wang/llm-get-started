@@ -89,7 +89,8 @@ if "chat_history" not in st.session_state:
 base_url = ENV.get("OLLAMA_BASE_URL", "http://localhost:11434")
 logger.info("Use model %s, base_url %s", MODEL, base_url)
 llm = ChatOllama(model=MODEL, streaming=True, base_url=base_url)
-chatopera_bot_api = ChatoperaBotAPIWrapper()
+chatopera_bot_api = ChatoperaBotAPIWrapper(chatopera_bot_client_id=ENV.get("CHATOPERA_BOT_CLIENT_ID"),
+                                            chatopera_bot_client_secret=ENV.get("CHATOPERA_BOT_CLIENT_SECRET"))
 chatopera_bot = ChatoperaBotResults(max_results=2, api_wrapper=chatopera_bot_api)
 tools = [chatopera_bot]
 checkpoints_saver = MemorySaver()

@@ -20,9 +20,9 @@ cd llm-get-started
 | --- | --- | --- |
 | 001_transformer | [README](./001_transformer/README.md) | Transformer basics, original algorithm fundamentals for Transformer Model. | 
 | 002_deepseek | [README](./002_deepseek/README.md)  | Run inferences and reasoning with DeepSeek R1. | 
-| 003_rag_langchain | [README](./003_rag_langchain/README.md) | Langchain for RAG (Retrieval-Augmented Generation) |
-| 004_chatbot_langchain | [README](./004_chatbot_langchain/README.md) | chatbot built with Langchain, DeepSeek R1 locally|
-| 005_agent_langchain | [README](./005_agent_langchain/README.md) | Agent built with Langchain, Mistral NeMo locally|
+| 003_rag_langchain | [README](./003_rag_langchain/README.md) | Langchain for RAG (Retrieval-Augmented Generation). |
+| 004_chatbot_langchain | [README](./004_chatbot_langchain/README.md) | chatbot built with Langchain, DeepSeek R1 locally. |
+| 005_agent_langchain | [README](./005_agent_langchain/README.md) | Agent built locally with Langchain, Mistral NeMo, qwen2, Chatopera Cloud, etc. |
 
 
 ## FAQs

@@ -2,6 +2,13 @@
 
 [By themselves, language models can't take actions - they just output text. A big use case for LangChain is creating agents. Agents are systems that use LLMs as reasoning engines to determine which actions to take and the inputs necessary to perform the action. After executing actions, the results can be fed back into the LLM to determine whether more actions are needed, or whether it is okay to finish. This is often achieved via tool-calling.](https://python.langchain.com/docs/tutorials/agents/)
 
+## Featured
+
+* Config custom knowledge base with Chatopera Cloud Services, [https://bot.chatopera.com/](https://bot.chatopera.com/)
+* Leverge chat routes with LLMs - e.g. mistral-nemo, myaniu/qwen2.5-1m:7b, myaniu/qwen2.5-1m:14b.
+
+![alt text](../assets/media/1749285800566.png)
+
 ## RAG & Agent
 
 * https://gaodalie.substack.com/p/langchain-mcp-rag-ollama-the-key
@@ -33,3 +40,10 @@ At last, run
 ```
 
 ![alt text](../assets/media/1748600958462.png)
+
+## Other tool calling enabled models
+
+```
+myaniu/qwen2.5-1m:7b
+myaniu/qwen2.5-1m:14b
+```
