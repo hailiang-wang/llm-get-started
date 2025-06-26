@@ -6,8 +6,8 @@ import env3
 from langchain_community.document_loaders import PDFPlumberLoader
 import streamlit as st
 
-# from rag2 import get_qa_model # HuggingFaceEmbeddings
-from rag import get_qa_model # chatopera/Synonyms Embeddings
+from rag_hf_emb import get_qa_model # HuggingFaceEmbeddings
+# from rag import get_qa_model # chatopera/Synonyms Embeddings
 
 # Get env
 ENV = env3.read_env(os.path.join(curdir, ".env"))

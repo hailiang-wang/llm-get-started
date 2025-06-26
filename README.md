@@ -24,7 +24,6 @@ cd llm-get-started
 | 004_chatbot_langchain | [README](./004_chatbot_langchain/README.md) | chatbot built with Langchain, DeepSeek R1 locally. |
 | 005_agent_langchain | [README](./005_agent_langchain/README.md) | Agent built locally with Langchain, Mistral NeMo, qwen2, Chatopera Cloud, etc. |
 
-
 ## FAQs
 
 * [ollama FAQs](https://github.com/ollama/ollama/blob/main/docs/faq.md)

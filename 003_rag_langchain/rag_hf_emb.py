@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2025 Hai Liang Wang<hailiang.hl.wang@gmail.com> All Rights Reserved
 #
-#
+# Using HuggingFace Embeddings
 # File: /c/Users/Administrator/courses/LLms/ollama-get-started/langchain/qa_model.py
 # Author: Hai Liang Wang
 # Date: 2025-05-29:10:45:54

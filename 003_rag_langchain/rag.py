@@ -35,9 +35,13 @@ from langchain.chains.llm import LLMChain
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chains import RetrievalQA
 from langchain_experimental.text_splitter import SemanticChunker
-import log5
+import env3, log5
 
+ENV = env3.load_env(os.path.join(curdir, ".env"))
 logger = log5.get_logger(log5.LN(__name__), output_mode = log5.OUTPUT_STDOUT)
+
+OLLAMA_BASEURL = ENV.get("OLLAMA_BASEURL", "")
+OLLAMA_HEADER_AUTH = f"Basic {ENV.get('OLLAMA_HEADER_AUTH', '')}"
 
 def get_qa_model(docs, ollama_model):
     '''
@@ -63,7 +67,9 @@ def get_qa_model(docs, ollama_model):
     retriever = vector.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
     # Define the LLM and the prompt
-    llm = OllamaLLM(model=ollama_model)
+    llm = OllamaLLM(model=ollama_model, base_url=OLLAMA_BASEURL, client_kwargs=dict({
+        "headers": {'Authorization': OLLAMA_HEADER_AUTH}
+    }))
     prompt = """
     1. Use the following pieces of context to answer the question at the end.
     2. If you don't know the answer, just say that "I don't know" but don't make up an answer on your own.\n
