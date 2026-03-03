@@ -29,7 +29,7 @@ if sys.version_info[0] < 3:
 else:
     unicode = str
 
-from common.environs import Env
+import env3
 
 ENV_LOCAL_RC = os.environ.get("ENV_FILE", os.path.join(curdir, os.pardir, ".env"))
 if not os.path.exists(ENV_LOCAL_RC):
@@ -39,7 +39,6 @@ else:
 
 # 环境变量
 # https://github.com/hailiang-wang/python-environ
-ENV = Env()
-ENV.read_env(ENV_LOCAL_RC, recurse=False)  # read .env file, if it exists
-log_level = ENV.str("LOG_LEVEL", "INFO")
+ENV = env3.load_env(ENV_LOCAL_RC)
+log_level = ENV.get("LOG_LEVEL", "INFO")
 os.environ["LOG_LEVEL"] = log_level
