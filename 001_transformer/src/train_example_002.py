@@ -50,15 +50,17 @@ from transformer import make_model
 from transformer.train import Batch, LabelSmoothing, rate, run_epoch, TrainState, SimpleLossCompute, greedy_decode
 from transformer.helpers import DummyOptimizer, DummyScheduler
 import transformer.visual as visual
-from common.logger import FileLogger
+import log5
+
 from prepare import generate_new_resultdir, copy_env, dump_hyper_params
 
 RESULT_DIR = generate_new_resultdir(framework="transformer")
 VOCAB_PT_FILEPATH = os.path.join(RESULT_DIR, "vocab.pt")
 MODEL_PT_FILEPATH = os.path.join(RESULT_DIR, "multi30k_model_final.pt")
 
-logger = FileLogger(os.path.join(RESULT_DIR, "train.log"))
-logger.info("RESULT_DIR %s" % RESULT_DIR)
+logger = log5.get_logger(log5.LN(__name__), output_mode=log5.OUTPUT_STDOUT)
+# logger = FileLogger(os.path.join(RESULT_DIR, "train.log"))
+# logger.info("RESULT_DIR %s" % RESULT_DIR)
 
 # To display altair with browser
 # TODO, further save these images to disk RESULT dir
@@ -223,6 +225,7 @@ def build_vocabulary(spacy_de, spacy_en):
 
     logger.info("Building German Vocabulary ...")
     train, val, test = datasets.Multi30k(language_pair=("de", "en"))
+
     vocab_src = build_vocab_from_iterator(
         yield_tokens(train + val + test, tokenize_de, index=0),
         min_freq=2,
@@ -378,9 +381,10 @@ def train_model(vocab_src, vocab_tgt, spacy_de, spacy_en, hyper_params):
 
 def load_trained_model(vocab_src, vocab_tgt, spacy_de, spacy_en):
     hyper_params = {
-        "batch_size": ENV.int("HYPER_PARAM_BATCHSIZE", 32),
-        "distributed": ENV.bool("HYPER_PARAM_DISTRIBUTED", False),
-        "num_epochs": ENV.int("HYPER_PARAM_EPOCH", 10),
+        "batch_size": int(ENV.get("HYPER_PARAM_BATCHSIZE", "32")),
+        # "distributed": ENV.get("HYPER_PARAM_DISTRIBUTED", False),
+        "distributed": False,
+        "num_epochs": int(ENV.get("HYPER_PARAM_EPOCH", "10")),
         "accum_iter": 10,
         "base_lr": 1.0,
         "max_padding": 72,

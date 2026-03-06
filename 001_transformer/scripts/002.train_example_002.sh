@@ -11,6 +11,9 @@ export PATH=/opt/miniconda3/envs/venv-py3/bin:$PATH
 export TS=$(date +%Y%m%d%H%M%S)
 export DATE=`date "+%Y%m%d"`
 export DATE_WITH_TIME=`date "+%Y%m%d-%H%M%S"` #add %3N as we want millisecond too
+# Set PYTHONPATH on Windows
+# https://stackoverflow.com/questions/77724082/add-multiple-directory-paths-to-pythonpath-git-bash-in-windows
+export PYTHONPATH="C:/Users/Administrator/git/touchtext;$PYTHONPATH"
 
 # functions
 

@@ -37,9 +37,9 @@ from common.utils import get_humanreadable_timestamp
 src_parent_dir = os.path.join(curdir, os.pardir)
 
 HYPER_PARAMS_JSON="hyper_params.json"
-DATASET_ROOT = ENV.str("DATASET_ROOT", os.path.join(src_parent_dir, "data"))
-RESULT_ROOT = ENV.str("RESULT_ROOT", os.path.join(src_parent_dir, "result"))
-TMPDIR_ROOT = ENV.str("TMPDIR_ROOT", os.path.join(src_parent_dir, "tmp"))
+DATASET_ROOT = ENV.get("DATASET_ROOT", os.path.join(src_parent_dir, "data"))
+RESULT_ROOT = ENV.get("RESULT_ROOT", os.path.join(src_parent_dir, "result"))
+TMPDIR_ROOT = ENV.get("TMPDIR_ROOT", os.path.join(src_parent_dir, "tmp"))
 
 print(">> DATASET_ROOT", DATASET_ROOT)
 print(">> RESULT_ROOT", RESULT_ROOT)

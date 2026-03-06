@@ -43,7 +43,7 @@ First, run
 By the first time, it comes to error, `UnicodeDecodeError: 'utf-8' codec can't decode byte 0x80 in position 37: invalid start byte`, then, use this solution [https://blog.csdn.net/samurais/article/details/147311770](https://blog.csdn.net/samurais/article/details/147311770)
 
 ```
-cd C:\Users\Administrator\AppData\Local\Temp\tarchtext\datasets\Multi30k
+cd C:\Users\Administrator\.cache\torch\text\datasets\Multi30k
 tar -zxvf mmt16_task1_test.tar.gz
 ```
 
