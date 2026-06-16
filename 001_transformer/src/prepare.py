@@ -63,6 +63,7 @@ def generate_new_resultdir(framework="default"):
     if not os.path.exists(newdir):
         os.makedirs(newdir)
 
+    print(">> generate_new_resultdir", newdir)
     return newdir
 
 def copy_env(envfile, resultdir):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#===============================================================================
+# ===============================================================================
 #
 # Modification Right (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . Licensed under the Apache License, Version 2.0
 # Copyright (c) 2018 Alexander Rush, MIT License, published with https://nlp.seas.harvard.edu/annotated-transformer/
@@ -9,7 +9,7 @@
 # Author: Hai Liang Wang
 # Date: 2025-04-17:15:14:05
 #
-#===============================================================================
+# ===============================================================================
 
 """
    
@@ -18,9 +18,10 @@ __copyright__ = "Copyright (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . L
 __author__ = "Hai Liang Wang"
 __date__ = "2025-04-17:15:14:05"
 
-import os, sys
+import os
+import sys
 curdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0,os.path.join(curdir, os.pardir))
+sys.path.insert(0, os.path.join(curdir, os.pardir))
 
 if sys.version_info[0] < 3:
     raise RuntimeError("Must be using Python 3")
@@ -33,13 +34,15 @@ import torch.nn as nn
 
 RUN_EXAMPLES = True
 
+
 def subsequent_mask(size):
     "Mask out subsequent positions."
+    print("subsequent_mask size", size)  # 71
     attn_shape = (1, size, size)
-    subsequent_mask = torch.triu(torch.ones(attn_shape), diagonal=1).type(
-        torch.uint8
-    )
+    subsequent_mask = torch.triu(torch.ones(
+        attn_shape), diagonal=1).type(torch.uint8)
     return subsequent_mask == 0
+
 
 class LayerNorm(nn.Module):
     "Construct a layernorm module (See citation for details)."
@@ -51,9 +54,12 @@ class LayerNorm(nn.Module):
         self.eps = eps
 
     def forward(self, x):
-        mean = x.mean(-1, keepdim=True)
+        mean = x.mean(-1, keepdim=True)  # 0,1,2(-1)
         std = x.std(-1, keepdim=True)
-        return self.a_2 * (x - mean) / (std + self.eps) + self.b_2
+        ret = self.a_2 * (x - mean) / (std + self.eps) + self.b_2
+
+        # print("[LayerNorm] x %s, ret %s" % (x.shape, ret.shape))
+        return ret
 
 
 def clones(module, N):

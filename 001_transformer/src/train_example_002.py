@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#===============================================================================
+# ===============================================================================
 #
 # Modification Right (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . Licensed under the Apache License, Version 2.0
 # Copyright (c) 2018 Alexander Rush, MIT License, published with https://nlp.seas.harvard.edu/annotated-transformer/
@@ -9,7 +9,7 @@
 # Author: Hai Liang Wang
 # Date: 2025-04-17:15:14:05
 #
-#===============================================================================
+# ===============================================================================
 
 """
    
@@ -18,7 +18,8 @@ __copyright__ = "Copyright (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . L
 __author__ = "Hai Liang Wang"
 __date__ = "2025-04-17:15:14:05"
 
-import os, sys
+import os
+import sys
 curdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(curdir)
 
@@ -44,6 +45,8 @@ import GPUtil
 import torch.multiprocessing as mp
 import altair as alt
 
+torch.set_printoptions(edgeitems=2, threshold=50)
+
 # Get ENV
 from env import ENV, ENV_LOCAL_RC
 from transformer import make_model
@@ -68,6 +71,8 @@ alt.renderers.enable("browser")
 
 # Load spacy tokenizer models, download them if they haven't been
 # downloaded already
+
+
 def load_tokenizers():
 
     try:
@@ -93,6 +98,7 @@ def yield_tokens(data_iter, tokenizer, index):
     for from_to_tuple in data_iter:
         yield tokenizer(from_to_tuple[index])
 
+
 def collate_batch(
     batch,
     src_pipeline,
@@ -106,7 +112,13 @@ def collate_batch(
     bs_id = torch.tensor([0], device=device)  # <s> token id
     eos_id = torch.tensor([1], device=device)  # </s> token id
     src_list, tgt_list = [], []
+    first_src, first_tgt = None, None
     for (_src, _tgt) in batch:
+
+        if first_src is None:
+            first_src = _src
+            first_tgt = _tgt
+
         processed_src = torch.cat(
             [
                 bs_id,
@@ -119,6 +131,7 @@ def collate_batch(
             ],
             0,
         )
+
         processed_tgt = torch.cat(
             [
                 bs_id,
@@ -142,6 +155,7 @@ def collate_batch(
                 value=pad_id,
             )
         )
+
         tgt_list.append(
             pad(
                 processed_tgt,
@@ -150,9 +164,20 @@ def collate_batch(
             )
         )
 
+    print("first_src", first_src)
+    print("first_src word2ids", src_list[0].tolist())
+    #
+    print("first_tgt ", first_tgt)
+    print("first_tgt word2ids", tgt_list[0].tolist())
+
     src = torch.stack(src_list)
     tgt = torch.stack(tgt_list)
+
+    print("train example batch src", src.shape)
+    print("train example batch tgt", tgt.shape)
+
     return (src, tgt)
+
 
 def create_dataloaders(
     device,
@@ -240,6 +265,21 @@ def build_vocabulary(spacy_de, spacy_en):
         specials=["<s>", "</s>", "<blank>", "<unk>"],
     )
 
+    print("Top 100 English Terms")
+    # eng_order_dict = vocab_tgt.get_stoi()
+    # eng_vocab_term = list( eng_order_dict.keys())
+    # i = 0
+    # for x in eng_vocab_term:
+    #     print("term", x, "index", eng_order_dict[x])
+    #     i += 1
+    #
+    #     if i > 100:
+    #         break
+    #
+    # print("vocab_tgt.get_itos(100)", vocab_tgt.get_itos()[100])
+    #
+    # sys.exit()
+
     vocab_src.set_default_index(vocab_src["<unk>"])
     vocab_tgt.set_default_index(vocab_tgt["<unk>"])
 
@@ -255,7 +295,9 @@ def load_vocab(spacy_de, spacy_en):
     logger.info("Finished.\nVocabulary sizes:")
     logger.info(len(vocab_src))
     logger.info(len(vocab_tgt))
+
     return vocab_src, vocab_tgt
+
 
 def train_worker(
     gpu,
@@ -270,9 +312,9 @@ def train_worker(
     logger.info(f"Train worker process using GPU: {gpu} for training")
     torch.cuda.set_device(gpu)
 
-    pad_idx = vocab_tgt["<blank>"]
+    pad_idx = vocab_tgt["<blank>"]  # 数字2
     d_model = 512
-    model = make_model(len(vocab_src), len(vocab_tgt), N=6,logger=logger)
+    model = make_model(len(vocab_src), len(vocab_tgt), N=6, logger=logger)
     model.cuda(gpu)
     module = model
     is_main_process = True
@@ -319,6 +361,7 @@ def train_worker(
         model.train()
         logger.info(f"[GPU{gpu}] Epoch {epoch} Training ====")
         _, train_state = run_epoch(
+            # [(de1,eng1), (de2, eng2), ...] 32
             (Batch(b[0], b[1], pad_idx) for b in train_dataloader),
             model,
             SimpleLossCompute(module.generator, criterion),
@@ -364,7 +407,8 @@ def train_distributed_model(vocab_src, vocab_tgt, spacy_de, spacy_en, hyper_para
     mp.spawn(
         train_worker,
         nprocs=ngpus,
-        args=(ngpus, vocab_src, vocab_tgt, spacy_de, spacy_en, hyper_params, True),
+        args=(ngpus, vocab_src, vocab_tgt, spacy_de,
+              spacy_en, hyper_params, True),
     )
 
 
@@ -391,7 +435,7 @@ def load_trained_model(vocab_src, vocab_tgt, spacy_de, spacy_en):
         "warmup": 3000,
         "file_prefix": "multi30k_model_",
     }
-    dump_hyper_params(hyper_params,resultdir=RESULT_DIR)
+    dump_hyper_params(hyper_params, resultdir=RESULT_DIR)
 
     if not exists(MODEL_PT_FILEPATH):
         copy_env(ENV_LOCAL_RC, RESULT_DIR)
@@ -441,9 +485,11 @@ def check_outputs(
             ).split(eos_string, 1)[0]
             + eos_string
         )
-        logger.info("Model Output               : " + model_txt.replace("\n", ""))
+        logger.info("Model Output               : " +
+                    model_txt.replace("\n", ""))
         results[idx] = (rb, src_tokens, tgt_tokens, model_out, model_txt)
     return results
+
 
 def run_model_example(vocab_src, vocab_tgt, spacy_de, spacy_en, device="cpu", n_examples=5):
     logger.info("Preparing Data ...")
@@ -469,6 +515,7 @@ def run_model_example(vocab_src, vocab_tgt, spacy_de, spacy_en, device="cpu", n_
     )
     return model, example_data
 
+
 def main():
     spacy_de, spacy_en = load_tokenizers()
     vocab_src, vocab_tgt = load_vocab(spacy_de, spacy_en)
@@ -493,7 +540,6 @@ def main():
         for ps in zip(*[m.params() for m in [model] + models]):
             ps[0].copy_(torch.sum(*ps[1:]) / len(ps[1:]))
 
-
     logger.info("Preparing Data ...")
     _, valid_dataloader = create_dataloaders(
         torch.device("cuda"),
@@ -505,7 +551,8 @@ def main():
         is_distributed=False,
     )
 
-    model, example_data = run_model_example(vocab_src, vocab_tgt, spacy_de, spacy_en, device="cpu", n_examples=5)
+    model, example_data = run_model_example(
+        vocab_src, vocab_tgt, spacy_de, spacy_en, device="cpu", n_examples=5)
     visual.viz_encoder_self(model, example_data).show()
     visual.viz_decoder_self(model, example_data).show()
     visual.viz_decoder_src(model, example_data).show()
@@ -513,4 +560,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

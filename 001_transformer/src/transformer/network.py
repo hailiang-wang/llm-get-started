@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#===============================================================================
+# ===============================================================================
 #
 # Modification Right (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . Licensed under the Apache License, Version 2.0
 # Copyright (c) 2018 Alexander Rush, MIT License, published with https://nlp.seas.harvard.edu/annotated-transformer/
@@ -9,7 +9,7 @@
 # Author: Hai Liang Wang
 # Date: 2025-04-17:15:14:05
 #
-#===============================================================================
+# ===============================================================================
 
 """
    
@@ -18,9 +18,10 @@ __copyright__ = "Copyright (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . L
 __author__ = "Hai Liang Wang"
 __date__ = "2025-04-17:15:14:05"
 
-import os, sys
+import os
+import sys
 curdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0,os.path.join(curdir, os.pardir))
+sys.path.insert(0, os.path.join(curdir, os.pardir))
 
 if sys.version_info[0] < 3:
     raise RuntimeError("Must be using Python 3")
@@ -59,6 +60,41 @@ class EncoderDecoder(nn.Module):
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         "Take in and process masked src and target sequences."
+        print("[network] shape of src %s, tgt %s, src_mask %s, tgt_mask %s" %
+              (src.shape, tgt.shape, src_mask.shape, tgt_mask.shape))
+
+        print("tgt_mask", tgt_mask)
+        # Batch size = 1
+        # [network] shape of src 1x72, tgt 1x71,
+        # src_mask 1x1x72, tgt_mask 1x71x71
+        #
+        ###############
+        # 背景信息
+        ###############
+        # 有一个翻译的任务，是从德语翻译成英语，比如有两个语句：
+        # src: Drei Kinder stehen vor zwei großen Reifen.
+        # tgt: Three children stand in front of two large tires.
+        # 在计算到这行的时候，src 和 tgt 都是对应的 word ids, 比如
+        # src: [0, 60, 67, 54, 28, 73, 80, 912, 4, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+        # 0 代表 <s>，是句子的开始
+        # 1 代表 </s>，是句子的结束
+        # 2 代表 <blank> 是空格，此处也用于 pad 补齐, 这个模型限制了最长输入是 72 个词语，不够的补齐，长的截断
+        # 此外，还有一个特殊的符号 <unk> id 是 4，代表未知的词语，根据词频统计后，一些出现了1次的词语，被设置为 unk，或者将来在实际应用当中，没有出现在 vocab 当中的词语
+        #
+        ###############
+        # 训练的过程
+        ###############
+        # 第一步，进行 encoder 的 forward 计算，在 encoder 的多头注意力中，将一句话，表示为了 1x72x512，然后
+        #        被拆解为了 8 个头（思考：为什么是 8 个头？，比如知乎一下：transformer encoder 拆解为 8 个头的原因）
+        #        参考阅读，8 个 head 的原因：https://zhuanlan.zhihu.com/p/2031356292967687042
+        #        猜想：将一句话，认为有 8 个最主要的词语，让词语和句子本身做点乘，找到共振的方向，实现词语和词语之间的相似度计算
+        #        通过这样的一个计算，来表征这个句子，得到语义空间的向量，并且，相似的句子和句子，可以有更近的距离
+        # 第二步，将 encoder 提取出来的输出，作为语义特征矩阵 memory，然后，在 decoder 中，将 memory 作为 Key
+        #        和 value 进行 attention 计算。
+        # 第三步，decoder 中的 attention 计算，是将 tgt 进行了 71 个输入的 Output Embedding
+        #        所以，tgt_mask 是 71x71, 也就是 tgt 的预测，是进行了 71 次，每次一个 mask
+        #        每个 mask 是释放了一个词，所以，output embedding 在 Masked Multi Head attention
+        #        是进行了 71 次运算，每次多了一个词。那么，就消除了状态的依赖。
         return self.decode(self.encode(src, src_mask), src_mask, tgt, tgt_mask)
 
     def encode(self, src, src_mask):
@@ -77,7 +113,7 @@ class Generator(nn.Module):
 
     def forward(self, x):
         return log_softmax(self.proj(x), dim=-1)
-    
+
 
 class Encoder(nn.Module):
     "Core encoder is a stack of N layers"
@@ -89,6 +125,10 @@ class Encoder(nn.Module):
 
     def forward(self, x, mask):
         "Pass the input (and mask) through each layer in turn."
+
+        print("Encoder mask", mask[0].tolist())
+        print("Encoder mask shape", mask.shape)
+
         for layer in self.layers:
             x = layer(x, mask)
         return self.norm(x)
@@ -110,7 +150,6 @@ class SublayerConnection(nn.Module):
         return x + self.dropout(sublayer(self.norm(x)))
 
 
-
 class EncoderLayer(nn.Module):
     "Encoder is made up of self-attn and feed forward (defined below)"
 
@@ -124,8 +163,8 @@ class EncoderLayer(nn.Module):
     def forward(self, x, mask):
         "Follow Figure 1 (left) for connections."
         x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask))
+        # x 32x72x512, mask 32x72x1
         return self.sublayer[1](x, self.feed_forward)
-    
 
 
 class Decoder(nn.Module):
@@ -156,20 +195,83 @@ class DecoderLayer(nn.Module):
     def forward(self, x, memory, src_mask, tgt_mask):
         "Follow Figure 1 (right) for connections."
         m = memory
+        print("Decoder tgt shape", x.shape)
+        print("Decoder tgt_mask shape", tgt_mask.shape)
+        print("Decoder memory shape", memory.shape)
+        print("Decoder src_mask shape", src_mask.shape)
+
+        # Decoder tgt shape torch.Size([1, 71, 512])
+        # Decoder tgt_mask shape torch.Size([1, 71, 71])
+        # Decoder memory shape torch.Size([1, 72, 512])
+        # Decoder src_mask shape torch.Size([1, 1, 72])
+
+        # Next: sublayer[0] 就是 self attn, 在 self attn 中，如何利用 tgt_mask 信息的？
         x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, tgt_mask))
+
+        # self.sublayer[1] 就是 src attn
         x = self.sublayer[1](x, lambda x: self.src_attn(x, m, m, src_mask))
+
+        # self.sublayer[2] 就是 Feedforward
         return self.sublayer[2](x, self.feed_forward)
 
 
 def attention(query, key, value, mask=None, dropout=None):
     "Compute 'Scaled Dot Product Attention'"
-    d_k = query.size(-1)
+
+    is_decoder_self_attn = False
+    if (mask is not None) and (len(mask.shape) == 4) and (mask.shape[3] == 71):
+        is_decoder_self_attn = True
+
+    d_k = query.size(-1) # dk = 64, # decoder 中 query shape 1x8x71x64
+    # decoder key shape # 1x8x71x64
+    # 71x64 x 64x71 = 71x71
+    # 对于 Encoder 和 Decoder 而言，下面这个公式的运算，形状是类似的
     scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
+
+    if is_decoder_self_attn:
+        print("Decoder self_attn mask shape", mask.shape)
+        # Decoder self_attn mask shape torch.Size([1, 1, 71, 71])
+    else:
+        print("Encoder self_attn mask shape", mask.shape)
+        # Encoder self_attn mask shape torch.Size([1, 1, 1, 72])
+
     if mask is not None:
+        # 这里是主要的区别：在 decoder 的 mask 中，对于这个句子中，词和词之间的投票，decoder 进行了不同时刻的遮盖
         scores = scores.masked_fill(mask == 0, -1e9)
+        # print("scores shape", scores.shape) # 8x72x72
+        # print("scores", scores[0][0].tolist())
     p_attn = scores.softmax(dim=-1)
+
+    '''
+    Decoder 和 Encoder 中的 self attention 得到的
+    scores 肯定是有区别的，因为是两个不同的 mask 掩码结构
+    那么，每个 scores 矩阵的表征是什么？
+    '''
+    if is_decoder_self_attn:
+        print("Decoder self_attn scores shape", scores.shape)
+        # Decoder self_attn scores shape torch.Size([1, 8, 71, 71]) # 71x71 的矩阵，表征到底是什么含义？是预测，还是相似度计算
+        # 做了 71 词预测？
+        #sys.exit(1)
+    else:
+        print("Encoder self_attn scores shape", scores.shape)
+        # Encoder self_attn scores shape torch.Size([1, 8, 72, 72]) # 72x72 的矩阵，表征的是什么含义？是相似计算？
+        # 每个单词的语义的向量？
+
+    '''
+    看起来，在 decoder 和 encoder 的 self atten 计算的最后，都是 [1,8, 句子的最大长度， 句子的最大长度]
+    那么，decoder 中的 mask 影响是什么？因为，最终的形状是类似的。
+    
+    在自注意力下，不管是 encoder 中，还是 decoder，都是一句话的单词和单词之间进行相似度计算（因为使用的是矩阵乘法）
+    那么，encoder 中，mask 是针对自然句子中，不足 72 个单词，进行掩码
+    但是，decoder 中，mask 是按照顺序，从理想输出 y 中，逐个单词的进行掩码 -> 不让预测的时刻，看到后面的信息
+    '''
     if dropout is not None:
         p_attn = dropout(p_attn)
+
+    # p_attn shape # 32x8x72x72, value 32x(72)x8x64
+    # print("p_attn shape", p_attn.shape) # [32, 8, 72, 72] # 72个词，和72个词之间相互投票
+    # print("value shape", value.shape) # [32, 8, 72, 64]
+
     return torch.matmul(p_attn, value), p_attn
 
 
@@ -187,18 +289,53 @@ class MultiHeadedAttention(nn.Module):
 
     def forward(self, query, key, value, mask=None):
         "Implements Figure 2"
+
+        is_decoder_self_attn = False
+
+        if (mask is not None) and (len(mask.shape) == 3) and (mask.shape[1] == 71):
+            is_decoder_self_attn = True
+
+        # mask shape 1x71x71
         if mask is not None:
             # Same mask applied to all h heads.
-            mask = mask.unsqueeze(1)
+            mask = mask.unsqueeze(1) # for decoder self attention, mask is 1x1x71x71
         nbatches = query.size(0)
 
+        if is_decoder_self_attn is True:
+            print("[decoder_self_attn] query shape", query.shape)
+            print("[decoder_self_attn] query", query)
+
         # 1) Do all the linear projections in batch from d_model => h x d_k
+        # x shape 32x72x512, lin shape 512x512
         query, key, value = [
             lin(x).view(nbatches, -1, self.h, self.d_k).transpose(1, 2)
             for lin, x in zip(self.linears, (query, key, value))
         ]
 
+        # Decoder self attention
+        if is_decoder_self_attn is True:
+            print("[decoder_self_attn] mask shape", mask.shape)
+            print("[decoder_self_attn] after change qkv -> query shape", query.shape)
+            print("[decoder_self_attn] after change qkv -> key shape", key.shape)
+            print("[decoder_self_attn] after change qkv -> value shape", value.shape)
+            # [decoder_self_attn] mask shape torch.Size([1, 1, 71, 71])
+            # [decoder_self_attn] after change qkv -> query shape torch.Size([1, 8, 71, 64])
+            # [decoder_self_attn] after change qkv -> key shape torch.Size([1, 8, 71, 64])
+            # [decoder_self_attn] after change qkv -> value shape torch.Size([1, 8, 71, 64])
+        else:
+            # Encoder self attention
+            print("[encoder_self_attn] mask shape", mask.shape)
+            print("[encoder_self_attn] after change qkv -> query shape", query.shape)
+            print("[encoder_self_attn] after change qkv -> key shape", key.shape)
+            print("[encoder_self_attn] after change qkv -> value shape", value.shape)
+            # Encoder self attention
+            # [encoder_self_attn] mask shape torch.Size([1, 1, 1, 72])
+            # [encoder_self_attn] after change qkv -> query shape torch.Size([1, 8, 72, 64])
+            # [encoder_self_attn] after change qkv -> key shape torch.Size([1, 8, 72, 64])
+            # [encoder_self_attn] after change qkv -> value shape torch.Size([1, 8, 72, 64])
+
         # 2) Apply attention on all the projected vectors in batch.
+        # Next, attention fn 中，如何使用不同的 mask 进行计算？
         x, self.attn = attention(
             query, key, value, mask=mask, dropout=self.dropout
         )
@@ -226,21 +363,30 @@ class PositionwiseFeedForward(nn.Module):
 
     def forward(self, x):
         return self.w_2(self.dropout(self.w_1(x).relu()))
-    
 
 
 class Embeddings(nn.Module):
     def __init__(self, d_model, vocab):
         super(Embeddings, self).__init__()
+
+        # vocab --> 3W 单词的，希望可以：将一句话，输出成 512 维向量
         self.lut = nn.Embedding(vocab, d_model)
         self.d_model = d_model
 
     def forward(self, x):
-        return self.lut(x) * math.sqrt(self.d_model)
+        # print("Embedding shape", x.shape)
+        # print("Embedding 0,1", x[0].tolist(), x[1].tolist())
+
+        # batchSize(32)(pair) x 72(words) x 512(vector)
+        ret = self.lut(x) * math.sqrt(self.d_model)
+        # print("embeding ret shape", ret.shape)
+        return ret
 
 
 class PositionalEncoding(nn.Module):
-    "Implement the PE function."
+    '''
+    Implement the PE function.
+    '''
 
     def __init__(self, d_model, dropout, max_len=5000):
         super(PositionalEncoding, self).__init__()
@@ -258,7 +404,11 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)
 
     def forward(self, x):
-        x = x + self.pe[:, : x.size(1)].requires_grad_(False)
+        print("PositionalEncoding x shape", x.shape)
+        pos_info = self.pe[:, : x.size(1)].requires_grad_(False)
+        print("PositionalEncoding pos_info shape", pos_info.shape)
+        # 1x72x512
+        x = x + pos_info
         return self.dropout(x)
 
 
@@ -268,10 +418,13 @@ class PositionalEncoding(nn.Module):
 import unittest
 
 # run testcase: python /c/Users/Administrator/courses/llms/transformer-pytorch-get-started/src/tranformer.py Test.testExample
+
+
 class Test(unittest.TestCase):
     '''
-    
+
     '''
+
     def setUp(self):
         pass
 
@@ -281,22 +434,25 @@ class Test(unittest.TestCase):
     def test_001(self):
         print("test_001")
 
+
 def test():
     '''
     Run tests, two ways available
     '''
 
     # run as a suite
-    #suite = unittest.TestSuite()
-    #suite.addTest(Test("test_001"))
-    #runner = unittest.TextTestRunner()
-    #runner.run(suite)
+    # suite = unittest.TestSuite()
+    # suite.addTest(Test("test_001"))
+    # runner = unittest.TextTestRunner()
+    # runner.run(suite)
 
     # run as main, accept pass testcase name with argvs
     unittest.main()
 
+
 def main():
     test()
+
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#===============================================================================
+# ===============================================================================
 #
 # Modification Right (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . Licensed under the Apache License, Version 2.0
 # Copyright (c) 2018 Alexander Rush, MIT License, published with https://nlp.seas.harvard.edu/annotated-transformer/
@@ -9,7 +9,7 @@
 # Author: Hai Liang Wang
 # Date: 2025-04-17:15:14:05
 #
-#===============================================================================
+# ===============================================================================
 
 """
    
@@ -18,9 +18,10 @@ __copyright__ = "Copyright (c) 2025 Hai Liang W.<hailiang.hl.wang@gmail.com> . L
 __author__ = "Hai Liang Wang"
 __date__ = "2025-04-17:15:14:05"
 
-import os, sys
+import os
+import sys
 curdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0,os.path.join(curdir, os.pardir))
+sys.path.insert(0, os.path.join(curdir, os.pardir))
 
 if sys.version_info[0] < 3:
     raise RuntimeError("Must be using Python 3")
@@ -39,22 +40,50 @@ class Batch:
 
     def __init__(self, src, tgt=None, pad=2):  # 2 = <blank>
         self.src = src
-        self.src_mask = (src != pad).unsqueeze(-2)
+        self.src_mask = (src != pad).unsqueeze(-2)  # 1x1x72
+
+        print("src_mask shape", self.src_mask.shape)
         if tgt is not None:
-            self.tgt = tgt[:, :-1]
+            print("tgt shape", tgt.shape)  # 32x72
+
+        if tgt is not None:
+            # -1 的位置，大部是 <blank> pad; self.tgt 里，是有 <\s>
+            self.tgt = tgt[:, :-1]  # 句子的第一个token 是 <s> 开始
             self.tgt_y = tgt[:, 1:]
+            # print("self.tgt[0]", self.tgt[0].tolist())
+            # print("self.tgt_y[0]", self.tgt_y[0].tolist())
+
+            # print("self.tgt_y", self.tgt_y.shape)
+
             self.tgt_mask = self.make_std_mask(self.tgt, pad)
             self.ntokens = (self.tgt_y != pad).data.sum()
+            # print("self.ntokens", self.ntokens.item())
 
     @staticmethod
     def make_std_mask(tgt, pad):
         "Create a mask to hide padding and future words."
         tgt_mask = (tgt != pad).unsqueeze(-2)
-        tgt_mask = tgt_mask & subsequent_mask(tgt.size(-1)).type_as(
+
+        # print("tgt_mask shape", tgt_mask.shape)
+        # # print("tgt_mask shape", tgt_mask.tolist())
+
+        subsequent_mask_t = subsequent_mask(tgt.size(-1)).type_as(
             tgt_mask.data
         )
+        print("*" * 80)
+        print("tgt_mask.shape before subsequent_mask", tgt_mask.shape)
+        print("tgt_mask before subsequent_mask", tgt_mask)
+
+        print("*" * 80)
+
+        print("subsequent_mask", subsequent_mask_t)
+        tgt_mask = tgt_mask & subsequent_mask_t
+        # print("tgt_mask.data", tgt_mask.data)
+        print("*" * 80)
+        print("tgt_mask.shape after subsequent_mask", tgt_mask.shape)
         return tgt_mask
-    
+
+
 class TrainState:
     """Track number of steps, examples, and tokens processed"""
 
@@ -63,7 +92,9 @@ class TrainState:
     samples: int = 0  # total # of examples used
     tokens: int = 0  # total # of tokens processed
 
-log = lambda x, y: print(x) if y is None else y.info(x)
+
+def log(x, y): return print(x) if y is None else y.info(x)
+
 
 def run_epoch(
     data_iter,
@@ -83,9 +114,8 @@ def run_epoch(
     tokens = 0
     n_accum = 0
     for i, batch in enumerate(data_iter):
-        out = model.forward(
-            batch.src, batch.tgt, batch.src_mask, batch.tgt_mask
-        )
+        # batch.src(1x72), batch.tgt(1x71), batch.src_mask(1x1x72), batch.tgt_mask(1x71x71)
+        out = model(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
         loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
         # loss_node = loss_node / accum_iter
         if mode == "train" or mode == "train+log":
@@ -119,6 +149,7 @@ def run_epoch(
         del loss_node
     return total_loss / total_tokens, train_state
 
+
 def rate(step, model_size, factor, warmup):
     """
     we have to default the step to 1 for LambdaLR function
@@ -129,6 +160,7 @@ def rate(step, model_size, factor, warmup):
     return factor * (
         model_size ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
     )
+
 
 class LabelSmoothing(nn.Module):
     "Implement label smoothing."
@@ -145,6 +177,7 @@ class LabelSmoothing(nn.Module):
     def forward(self, x, target):
         assert x.size(1) == self.size
         true_dist = x.data.clone()
+
         true_dist.fill_(self.smoothing / (self.size - 2))
         true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
         true_dist[:, self.padding_idx] = 0
@@ -153,7 +186,8 @@ class LabelSmoothing(nn.Module):
             true_dist.index_fill_(0, mask.squeeze(), 0.0)
         self.true_dist = true_dist
         return self.criterion(x, true_dist.clone().detach())
-    
+
+
 def loss(x, crit):
     d = x + 3 * 1
     predict = torch.FloatTensor([[0, x / d, 1 / d, 1 / d, 1 / d]])
@@ -176,6 +210,7 @@ class SimpleLossCompute:
             / norm
         )
         return sloss.data * norm, sloss
+
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
     memory = model.encode(src, src_mask)
