@@ -316,7 +316,7 @@ def train_worker(
     d_model = 512
     model = make_model(len(vocab_src), len(vocab_tgt), N=6, logger=logger)
     model.cuda(gpu)
-    module = model
+    module = model # 为什么要用两个变量？ module 作为 model 的浅拷贝，意义在哪里？
     is_main_process = True
     if is_distributed:
         dist.init_process_group(

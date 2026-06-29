@@ -112,7 +112,11 @@ class Generator(nn.Module):
         self.proj = nn.Linear(d_model, vocab)
 
     def forward(self, x):
-        return log_softmax(self.proj(x), dim=-1)
+        # x shape 1x71x512
+        x = self.proj(x)
+        print("[Generator] shape of x", x.shape)
+        # [Generator] shape of x torch.Size([1, 71, 6384])
+        return log_softmax(x, dim=-1)
 
 
 class Encoder(nn.Module):
@@ -178,8 +182,10 @@ class Decoder(nn.Module):
     def forward(self, x, memory, src_mask, tgt_mask):
         for layer in self.layers:
             x = layer(x, memory, src_mask, tgt_mask)
-        return self.norm(x)
-
+        normalized_x =  self.norm(x)
+        print("[decoder] return normalized_x shape", normalized_x.shape)
+        # [decoder] return normalized_x shape torch.Size([1, 71, 512])
+        return normalized_x
 
 class DecoderLayer(nn.Module):
     "Decoder is made of self-attn, src-attn, and feed forward (defined below)"

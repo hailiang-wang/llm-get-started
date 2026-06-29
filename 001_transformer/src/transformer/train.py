@@ -99,7 +99,7 @@ def log(x, y): return print(x) if y is None else y.info(x)
 def run_epoch(
     data_iter,
     model,
-    loss_compute,
+    loss_compute, # SimpleLossCompute(module.generator, criterion),
     optimizer,
     scheduler,
     mode="train",
@@ -116,6 +116,9 @@ def run_epoch(
     for i, batch in enumerate(data_iter):
         # batch.src(1x72), batch.tgt(1x71), batch.src_mask(1x1x72), batch.tgt_mask(1x71x71)
         out = model(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
+        # out shape [1x71x512], tgt_y 是 src 的对应的目标翻译句子， tgt_y shape [1, 71]
+        # print("batch.ntokens ", batch.ntokens)
+        # batch.ntokens  tensor(11, device='cuda:0')
         loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
         # loss_node = loss_node / accum_iter
         if mode == "train" or mode == "train+log":
@@ -166,7 +169,16 @@ class LabelSmoothing(nn.Module):
     "Implement label smoothing."
 
     def __init__(self, size, padding_idx, smoothing=0.0):
+        '''
+        size: len(vocab_tgt), 目标翻译语言的词汇表的大小；6384 for english Multi30k
+        padding_idx: blank word id, 2
+        '''
+
         super(LabelSmoothing, self).__init__()
+        # https://docs.pytorch.org/docs/2.12/generated/torch.nn.KLDivLoss.html
+        # TODO 问题：
+        #    1. 为什么不使用 MSE 或 NLL Loss 呢？
+        #    2. KLDivLoss 好处，应用场景
         self.criterion = nn.KLDivLoss(reduction="sum")
         self.padding_idx = padding_idx
         self.confidence = 1.0 - smoothing
@@ -175,12 +187,24 @@ class LabelSmoothing(nn.Module):
         self.true_dist = None
 
     def forward(self, x, target):
+        '''
+        x shape 71x6384
+        target shape 71
+        为什么是 71? 因为 batch 只有 1 个，而每个句子是 71 个单词（原来是 72，去掉了 第一个 <s> 不需要预测）
+        如果 batch 是 2 的话，那么
+         - x shape 142x6384
+         - target shape 142
+        '''
         assert x.size(1) == self.size
+        # 不同拷贝方法介绍：https://www.geeksforgeeks.org/deep-learning/way-to-copy-a-tensor-in-pytorch/
         true_dist = x.data.clone()
 
+        # 将 true_dist 的所有数字都设置为 smoothing 值，默认 smoothing = 0，所以默认的 true_dist 都变成了 0
         true_dist.fill_(self.smoothing / (self.size - 2))
         true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
         true_dist[:, self.padding_idx] = 0
+        # true_dist shape 71x6384, true_dist 是 target 的 one hot 模式的张量
+        # 对输入 tgt 上的 blank (pad 生成的)进行掩码，忽略该部分对 loss 的影响
         mask = torch.nonzero(target.data == self.padding_idx)
         if mask.dim() > 0:
             true_dist.index_fill_(0, mask.squeeze(), 0.0)
@@ -201,15 +225,26 @@ class SimpleLossCompute:
         self.generator = generator
         self.criterion = criterion
 
-    def __call__(self, x, y, norm):
+    def __call__(self, x, y, ntokens):
+        '''
+        ntokens: normalize values
+        '''
         x = self.generator(x)
+        # x shape torch.Size([1, 71, 6384])
+        x = x.contiguous().view(-1, x.size(-1))
+        y = y.contiguous().view(-1)
+        print("x shape", x.shape)
+        print("y shape", y.shape)
+        # x shape torch.Size([71, 6384])
+        # y shape torch.Size([71])
+
         sloss = (
             self.criterion(
-                x.contiguous().view(-1, x.size(-1)), y.contiguous().view(-1)
+               x, y
             )
-            / norm
+            / ntokens
         )
-        return sloss.data * norm, sloss
+        return sloss.data * ntokens, sloss
 
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
