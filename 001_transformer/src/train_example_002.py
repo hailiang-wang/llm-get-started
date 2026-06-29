@@ -316,7 +316,7 @@ def train_worker(
     d_model = 512
     model = make_model(len(vocab_src), len(vocab_tgt), N=6, logger=logger)
     model.cuda(gpu)
-    module = model # 为什么要用两个变量？ module 作为 model 的浅拷贝，意义在哪里？
+    module = model  # 为什么要用两个变量？ module 作为 model 的浅拷贝，意义在哪里？
     is_main_process = True
     if is_distributed:
         dist.init_process_group(
@@ -461,6 +461,7 @@ def check_outputs(
         logger.info("\nExample %d ========\n" % idx)
         b = next(iter(valid_dataloader))
         rb = Batch(b[0], b[1], pad_idx)
+        print("[check_outputs] b0 \n %s \nb1 %s" % (b[0], b[1]))
         greedy_decode(model, rb.src, rb.src_mask, 64, 0)[0]
 
         src_tokens = [
@@ -539,17 +540,6 @@ def main():
         "Average models into model"
         for ps in zip(*[m.params() for m in [model] + models]):
             ps[0].copy_(torch.sum(*ps[1:]) / len(ps[1:]))
-
-    logger.info("Preparing Data ...")
-    _, valid_dataloader = create_dataloaders(
-        torch.device("cuda"),
-        vocab_src,
-        vocab_tgt,
-        spacy_de,
-        spacy_en,
-        batch_size=1,
-        is_distributed=False,
-    )
 
     model, example_data = run_model_example(
         vocab_src, vocab_tgt, spacy_de, spacy_en, device="cpu", n_examples=5)

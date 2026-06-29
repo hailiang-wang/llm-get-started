@@ -99,7 +99,7 @@ def log(x, y): return print(x) if y is None else y.info(x)
 def run_epoch(
     data_iter,
     model,
-    loss_compute, # SimpleLossCompute(module.generator, criterion),
+    loss_compute,  # SimpleLossCompute(module.generator, criterion),
     optimizer,
     scheduler,
     mode="train",
@@ -179,6 +179,8 @@ class LabelSmoothing(nn.Module):
         # TODO 问题：
         #    1. 为什么不使用 MSE 或 NLL Loss 呢？
         #    2. KLDivLoss 好处，应用场景
+        # 深度学习常见几种损失函数以及适用场景
+        # 一个分享：https://zhuanlan.zhihu.com/p/666303929
         self.criterion = nn.KLDivLoss(reduction="sum")
         self.padding_idx = padding_idx
         self.confidence = 1.0 - smoothing
@@ -199,6 +201,10 @@ class LabelSmoothing(nn.Module):
         # 不同拷贝方法介绍：https://www.geeksforgeeks.org/deep-learning/way-to-copy-a-tensor-in-pytorch/
         true_dist = x.data.clone()
 
+        # #REF204 此处，将 wordid 转化为了 onehot 向量，至关重要
+        # 因为在推理阶段，将 softmax 的最大概率的索引，看成是 wordid，然后查找对应的
+        # 词语，其关键就是这里，将词语转化为了 onehot 向量，实现了 wordid 到 onehot
+        # 分布的一一对应
         # 将 true_dist 的所有数字都设置为 smoothing 值，默认 smoothing = 0，所以默认的 true_dist 都变成了 0
         true_dist.fill_(self.smoothing / (self.size - 2))
         true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
@@ -240,7 +246,7 @@ class SimpleLossCompute:
 
         sloss = (
             self.criterion(
-               x, y
+                x, y
             )
             / ntokens
         )
@@ -250,11 +256,15 @@ class SimpleLossCompute:
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
     memory = model.encode(src, src_mask)
     ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src.data)
+
     for i in range(max_len - 1):
         out = model.decode(
             memory, src_mask, ys, subsequent_mask(ys.size(1)).type_as(src.data)
         )
         prob = model.generator(out[:, -1])
+
+        # 问题：为什么用 softmax 生成的索引，可以作为输出的词的 wordid
+        # 观点：见 #REF204 看损失函数的生成，是否将 wordid 和 softmax 的最大概率进行了关联
         _, next_word = torch.max(prob, dim=1)
         next_word = next_word.data[0]
         ys = torch.cat(

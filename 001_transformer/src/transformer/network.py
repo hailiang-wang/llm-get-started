@@ -95,6 +95,7 @@ class EncoderDecoder(nn.Module):
         #        所以，tgt_mask 是 71x71, 也就是 tgt 的预测，是进行了 71 次，每次一个 mask
         #        每个 mask 是释放了一个词，所以，output embedding 在 Masked Multi Head attention
         #        是进行了 71 次运算，每次多了一个词。那么，就消除了状态的依赖。
+        # 返回值是 1x71x512 的张量
         return self.decode(self.encode(src, src_mask), src_mask, tgt, tgt_mask)
 
     def encode(self, src, src_mask):
@@ -182,10 +183,11 @@ class Decoder(nn.Module):
     def forward(self, x, memory, src_mask, tgt_mask):
         for layer in self.layers:
             x = layer(x, memory, src_mask, tgt_mask)
-        normalized_x =  self.norm(x)
+        normalized_x = self.norm(x)
         print("[decoder] return normalized_x shape", normalized_x.shape)
         # [decoder] return normalized_x shape torch.Size([1, 71, 512])
         return normalized_x
+
 
 class DecoderLayer(nn.Module):
     "Decoder is made of self-attn, src-attn, and feed forward (defined below)"
@@ -240,7 +242,7 @@ def attention(query, key, value, mask=None, dropout=None):
     if (mask is not None) and (len(mask.shape) == 4) and (mask.shape[3] == 71):
         is_decoder_self_attn = True
 
-    d_k = query.size(-1) # dk = 64, # decoder 中 query shape 1x8x71x64
+    d_k = query.size(-1)  # dk = 64, # decoder 中 query shape 1x8x71x64
     # decoder key shape # 1x8x71x64
     # 71x64 x 64x71 = 71x71
     # 对于 Encoder 和 Decoder 而言，下面这个公式的运算，形状是类似的
@@ -269,7 +271,7 @@ def attention(query, key, value, mask=None, dropout=None):
         print("Decoder self_attn scores shape", scores.shape)
         # Decoder self_attn scores shape torch.Size([1, 8, 71, 71]) # 71x71 的矩阵，表征到底是什么含义？是预测，还是相似度计算
         # 做了 71 词预测？
-        #sys.exit(1)
+        # sys.exit(1)
     else:
         print("Encoder self_attn scores shape", scores.shape)
         # Encoder self_attn scores shape torch.Size([1, 8, 72, 72]) # 72x72 的矩阵，表征的是什么含义？是相似计算？
@@ -323,7 +325,7 @@ class MultiHeadedAttention(nn.Module):
         # mask shape 1x71x71
         if mask is not None:
             # Same mask applied to all h heads.
-            mask = mask.unsqueeze(1) # for decoder self attention, mask is 1x1x71x71
+            mask = mask.unsqueeze(1)  # for decoder self attention, mask is 1x1x71x71
         nbatches = query.size(0)
 
         if is_decoder_self_attn is True:
