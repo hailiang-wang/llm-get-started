@@ -1,0 +1,30 @@
+## START: Resolve CMD by OS
+unameOut="$(uname -s)"
+case "${unameOut}" in
+Linux*) MACHINE=Linux ;;
+Darwin*) MACHINE=Mac ;;
+CYGWIN*) MACHINE=Cygwin ;;
+MINGW*) MACHINE=MinGw ;;
+*) MACHINE="UNKNOWN:${unameOut}" ;;
+esac
+
+
+echo ">> Working on machine "${MACHINE}
+
+if [[ $MACHINE == "MinGw" ]]; then
+    export PYTHON_HOME=/c/devel/Python/Python311
+    export PATH=$PYTHON_HOME:$PYTHON_HOME/Scripts:$PATH
+elif [[ $MACHINE == "Darwin" ]]; then
+    echo "Not supported" $MACHINE
+    exit 1
+elif [[ $MACHINE == "Linux" ]]; then
+    # For linux
+    export PYTHON_HOME=/d/home/hai/.envs/venv-py3
+    export PATH=$PYTHON_HOME/bin:$PATH
+else
+    echo "Not supported" $MACHINE
+    exit 1
+fi
+
+echo "PYTHON_HOME="$PYTHON_HOME
+which python3

@@ -29,6 +29,13 @@ fi
 
 source .env
 
+if [  -f localrc ]; then
+    source localrc
+fi
+
+which python3
+sleep 2
+
 if [ -z ${HYPER_PARAM_EPOCH+x} ]; then echo "ERROR, HYPER_PARAM_EPOCH is not defined"; exit 2; else echo "HYPER_PARAM_EPOCH is set to '$HYPER_PARAM_EPOCH'"; fi
 
 if [ ! -d tmp ]; then
@@ -51,7 +58,7 @@ echo "GIT_COMMIT_SHORT=$GIT_COMMIT_SHORT" >> .env
 
 # start train
 cd $baseDir/../src
-python train_example_002.py
+python3 train_example_002.py
 
 # push results
 # cd $baseDir/..
