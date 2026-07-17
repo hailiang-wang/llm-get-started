@@ -60,10 +60,10 @@ class EncoderDecoder(nn.Module):
 
     def forward(self, src, tgt, src_mask, tgt_mask):
         "Take in and process masked src and target sequences."
-        print("[network] shape of src %s, tgt %s, src_mask %s, tgt_mask %s" %
-              (src.shape, tgt.shape, src_mask.shape, tgt_mask.shape))
+        # print("[network] shape of src %s, tgt %s, src_mask %s, tgt_mask %s" %
+        #       (src.shape, tgt.shape, src_mask.shape, tgt_mask.shape))
 
-        print("tgt_mask", tgt_mask)
+        # print("tgt_mask", tgt_mask)
         # Batch size = 1
         # [network] shape of src 1x72, tgt 1x71,
         # src_mask 1x1x72, tgt_mask 1x71x71
@@ -115,7 +115,7 @@ class Generator(nn.Module):
     def forward(self, x):
         # x shape 1x71x512
         x = self.proj(x)
-        print("[Generator] shape of x", x.shape)
+        # print("[Generator] shape of x", x.shape)
         # [Generator] shape of x torch.Size([1, 71, 6384])
         return log_softmax(x, dim=-1)
 
@@ -131,8 +131,8 @@ class Encoder(nn.Module):
     def forward(self, x, mask):
         "Pass the input (and mask) through each layer in turn."
 
-        print("Encoder mask", mask[0].tolist())
-        print("Encoder mask shape", mask.shape)
+        # print("Encoder mask", mask[0].tolist())
+        # print("Encoder mask shape", mask.shape)
 
         for layer in self.layers:
             x = layer(x, mask)
@@ -184,7 +184,7 @@ class Decoder(nn.Module):
         for layer in self.layers:
             x = layer(x, memory, src_mask, tgt_mask)
         normalized_x = self.norm(x)
-        print("[decoder] return normalized_x shape", normalized_x.shape)
+        # print("[decoder] return normalized_x shape", normalized_x.shape)
         # [decoder] return normalized_x shape torch.Size([1, 71, 512])
         return normalized_x
 
@@ -203,10 +203,10 @@ class DecoderLayer(nn.Module):
     def forward(self, x, memory, src_mask, tgt_mask):
         "Follow Figure 1 (right) for connections."
         m = memory
-        print("Decoder tgt shape", x.shape)
-        print("Decoder tgt_mask shape", tgt_mask.shape)
-        print("Decoder memory shape", memory.shape)
-        print("Decoder src_mask shape", src_mask.shape)
+        # print("Decoder tgt shape", x.shape)
+        # print("Decoder tgt_mask shape", tgt_mask.shape)
+        # print("Decoder memory shape", memory.shape)
+        # print("Decoder src_mask shape", src_mask.shape)
 
         # Decoder tgt shape torch.Size([1, 71, 512])
         # Decoder tgt_mask shape torch.Size([1, 71, 71])
@@ -218,9 +218,9 @@ class DecoderLayer(nn.Module):
 
         # self.sublayer[1] 就是 src attn
         # TODO 为什么在 Decoder 的第二个 Atten 运算中，也就是 src_atten 中，使用了 src_mask?
-        print("Decoder before src_attention: decoder self attention shape %s\n  encoder attention output(memory) shape %s\n  encoder src mask shape %s" % (
-            x.shape, m.shape, src_mask.shape
-        ))
+        # print("Decoder before src_attention: decoder self attention shape %s\n  encoder attention output(memory) shape %s\n  encoder src mask shape %s" % (
+        #     x.shape, m.shape, src_mask.shape
+        # ))
         # Decoder before src_attention: decoder self attention shape torch.Size([1, 71, 512])
         #   encoder attention output(memory) shape torch.Size([1, 72, 512])
         #   encoder src mask shape torch.Size([1, 1, 72])
@@ -228,7 +228,7 @@ class DecoderLayer(nn.Module):
         # TODO Decoder 中，掩码的设计和这里的 decoder self attention 的关联关系：decoder 掩码的设计，让 decoder self attention 具备了什么信息？
         # 在生成 decoder self attention 的时候，是使用了对角线矩阵，来进行掩码，而不是使用 Output 输入的句子，制作的掩码
         x = self.sublayer[1](x, lambda y: self.src_attn(y, m, m, src_mask))
-        print("Decoder after src_attention: decoder attention output shape", x.shape)
+        # print("Decoder after src_attention: decoder attention output shape", x.shape)
         # Decoder after src_attention: decoder attention output shape torch.Size([1, 71, 512])
 
         # self.sublayer[2] 就是 Feedforward
@@ -249,7 +249,8 @@ def attention(query, key, value, mask=None, dropout=None):
     scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
 
     if is_decoder_self_attn:
-        print("Decoder self_attn mask shape", mask.shape)
+        pass
+        # print("Decoder self_attn mask shape", mask.shape)
         # Decoder self_attn mask shape torch.Size([1, 1, 71, 71])
     else:
         print("Encoder self_attn mask shape", mask.shape)
@@ -268,12 +269,14 @@ def attention(query, key, value, mask=None, dropout=None):
     那么，每个 scores 矩阵的表征是什么？
     '''
     if is_decoder_self_attn:
-        print("Decoder self_attn scores shape", scores.shape)
+        pass
+        # print("Decoder self_attn scores shape", scores.shape)
         # Decoder self_attn scores shape torch.Size([1, 8, 71, 71]) # 71x71 的矩阵，表征到底是什么含义？是预测，还是相似度计算
         # 做了 71 词预测？
         # sys.exit(1)
     else:
-        print("Encoder self_attn scores shape", scores.shape)
+        pass
+        # print("Encoder self_attn scores shape", scores.shape)
         # Encoder self_attn scores shape torch.Size([1, 8, 72, 72]) # 72x72 的矩阵，表征的是什么含义？是相似计算？
         # 每个单词的语义的向量？
 
@@ -320,7 +323,8 @@ class MultiHeadedAttention(nn.Module):
             is_decoder_src_attn = True
 
         if is_decoder_src_attn:
-            print("[decoder src attention] Now in decoder src attention")
+            pass
+            # print("[decoder src attention] Now in decoder src attention")
 
         # mask shape 1x71x71
         if mask is not None:
@@ -329,8 +333,9 @@ class MultiHeadedAttention(nn.Module):
         nbatches = query.size(0)
 
         if is_decoder_self_attn is True:
-            print("[decoder_self_attn] query shape", query.shape)
-            print("[decoder_self_attn] query", query)
+            pass
+            # print("[decoder_self_attn] query shape", query.shape)
+            # print("[decoder_self_attn] query", query)
 
         # 1) Do all the linear projections in batch from d_model => h x d_k
         # x shape 1x72x512, lin shape 512x512
@@ -341,34 +346,37 @@ class MultiHeadedAttention(nn.Module):
 
         # Decoder self attention
         if is_decoder_self_attn is True:
-            print("[decoder_self_attn] mask shape", mask.shape)
-            print("[decoder_self_attn] after change qkv -> query shape", query.shape)
-            print("[decoder_self_attn] after change qkv -> key shape", key.shape)
-            print("[decoder_self_attn] after change qkv -> value shape", value.shape)
+            # print("[decoder_self_attn] mask shape", mask.shape)
+            # print("[decoder_self_attn] after change qkv -> query shape", query.shape)
+            # print("[decoder_self_attn] after change qkv -> key shape", key.shape)
+            # print("[decoder_self_attn] after change qkv -> value shape", value.shape)
             # [decoder_self_attn] mask shape torch.Size([1, 1, 71, 71])
             # [decoder_self_attn] after change qkv -> query shape torch.Size([1, 8, 71, 64])
             # [decoder_self_attn] after change qkv -> key shape torch.Size([1, 8, 71, 64])
             # [decoder_self_attn] after change qkv -> value shape torch.Size([1, 8, 71, 64])
+            pass
         elif is_decoder_src_attn is True:
-            print("[decoder_src_attn] mask shape", mask.shape)
-            print("[decoder_src_attn] after change qkv -> query shape", query.shape)
-            print("[decoder_src_attn] after change qkv -> key shape", key.shape)
-            print("[decoder_src_attn] after change qkv -> value shape", value.shape)
+            # print("[decoder_src_attn] mask shape", mask.shape)
+            # print("[decoder_src_attn] after change qkv -> query shape", query.shape)
+            # print("[decoder_src_attn] after change qkv -> key shape", key.shape)
+            # print("[decoder_src_attn] after change qkv -> value shape", value.shape)
             # [decoder_src_attn] mask shape torch.Size([1, 1, 1, 72])
             # [decoder_src_attn] after change qkv -> query shape torch.Size([1, 8, 71, 64])
             # [decoder_src_attn] after change qkv -> key shape torch.Size([1, 8, 72, 64])
             # [decoder_src_attn] after change qkv -> value shape torch.Size([1, 8, 72, 64])
+            pass
         else:
             # Encoder self attention
-            print("[encoder_self_attn] mask shape", mask.shape)
-            print("[encoder_self_attn] after change qkv -> query shape", query.shape)
-            print("[encoder_self_attn] after change qkv -> key shape", key.shape)
-            print("[encoder_self_attn] after change qkv -> value shape", value.shape)
+            # print("[encoder_self_attn] mask shape", mask.shape)
+            # print("[encoder_self_attn] after change qkv -> query shape", query.shape)
+            # print("[encoder_self_attn] after change qkv -> key shape", key.shape)
+            # print("[encoder_self_attn] after change qkv -> value shape", value.shape)
             # Encoder self attention
             # [encoder_self_attn] mask shape torch.Size([1, 1, 1, 72])
             # [encoder_self_attn] after change qkv -> query shape torch.Size([1, 8, 72, 64])
             # [encoder_self_attn] after change qkv -> key shape torch.Size([1, 8, 72, 64])
             # [encoder_self_attn] after change qkv -> value shape torch.Size([1, 8, 72, 64])
+            pass
 
         # 2) Apply attention on all the projected vectors in batch.
         # attention fn 中，如何使用不同的 mask 进行计算？
@@ -440,9 +448,9 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)
 
     def forward(self, x):
-        print("PositionalEncoding x shape", x.shape)
+        # print("PositionalEncoding x shape", x.shape)
         pos_info = self.pe[:, : x.size(1)].requires_grad_(False)
-        print("PositionalEncoding pos_info shape", pos_info.shape)
+        # print("PositionalEncoding pos_info shape", pos_info.shape)
         # 1x72x512
         x = x + pos_info
         return self.dropout(x)
