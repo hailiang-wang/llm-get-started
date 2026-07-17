@@ -239,8 +239,8 @@ class SimpleLossCompute:
         # x shape torch.Size([1, 71, 6384])
         x = x.contiguous().view(-1, x.size(-1))
         y = y.contiguous().view(-1)
-        print("x shape", x.shape)
-        print("y shape", y.shape)
+        # print("x shape", x.shape)
+        # print("y shape", y.shape)
         # x shape torch.Size([71, 6384])
         # y shape torch.Size([71])
 

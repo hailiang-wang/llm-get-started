@@ -253,8 +253,9 @@ def attention(query, key, value, mask=None, dropout=None):
         # print("Decoder self_attn mask shape", mask.shape)
         # Decoder self_attn mask shape torch.Size([1, 1, 71, 71])
     else:
-        print("Encoder self_attn mask shape", mask.shape)
+        # print("Encoder self_attn mask shape", mask.shape)
         # Encoder self_attn mask shape torch.Size([1, 1, 1, 72])
+        pass
 
     if mask is not None:
         # 这里是主要的区别：在 decoder 的 mask 中，对于这个句子中，词和词之间的投票，decoder 进行了不同时刻的遮盖

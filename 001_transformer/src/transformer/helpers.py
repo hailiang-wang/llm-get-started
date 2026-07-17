@@ -37,7 +37,7 @@ RUN_EXAMPLES = True
 
 def subsequent_mask(size):
     "Mask out subsequent positions."
-    print("subsequent_mask size", size)  # 71
+    # print("subsequent_mask size", size)  # 71
     attn_shape = (1, size, size)
     subsequent_mask = torch.triu(torch.ones(
         attn_shape), diagonal=1).type(torch.uint8)
