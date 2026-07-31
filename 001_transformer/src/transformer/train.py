@@ -70,17 +70,17 @@ class Batch:
         subsequent_mask_t = subsequent_mask(tgt.size(-1)).type_as(
             tgt_mask.data
         )
-        print("*" * 80)
-        print("tgt_mask.shape before subsequent_mask", tgt_mask.shape)
-        print("tgt_mask before subsequent_mask", tgt_mask)
+        # print("*" * 80)
+        # print("tgt_mask.shape before subsequent_mask", tgt_mask.shape)
+        # print("tgt_mask before subsequent_mask", tgt_mask)
 
-        print("*" * 80)
+        # print("*" * 80)
 
-        print("subsequent_mask", subsequent_mask_t)
+        # print("subsequent_mask", subsequent_mask_t)
         tgt_mask = tgt_mask & subsequent_mask_t
         # print("tgt_mask.data", tgt_mask.data)
-        print("*" * 80)
-        print("tgt_mask.shape after subsequent_mask", tgt_mask.shape)
+        # print("*" * 80)
+        # print("tgt_mask.shape after subsequent_mask", tgt_mask.shape)
         return tgt_mask
 
 

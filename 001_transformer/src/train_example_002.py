@@ -309,13 +309,15 @@ def train_worker(
     hyper_params,
     is_distributed=False,
 ):
-    logger.info(f"Train worker process using GPU: {gpu} for training")
-    torch.cuda.set_device(gpu)
+    # use CPU only
+    # logger.info(f"Train worker process using GPU: {gpu} for training")
+    # torch.cuda.set_device(gpu)
 
     pad_idx = vocab_tgt["<blank>"]  # 数字2
     d_model = 512
     model = make_model(len(vocab_src), len(vocab_tgt), N=6, logger=logger)
-    model.cuda(gpu)
+    # use CPU only
+    # model.cuda(gpu)
     module = model  # 为什么要用两个变量？ module 作为 model 的浅拷贝，意义在哪里？
     is_main_process = True
     if is_distributed:
@@ -329,10 +331,15 @@ def train_worker(
     criterion = LabelSmoothing(
         size=len(vocab_tgt), padding_idx=pad_idx, smoothing=0.1
     )
-    criterion.cuda(gpu)
+    # use CPU only
+    # criterion.cuda(gpu)
+
+    device = gpu
+    if gpu is None:
+        device = torch.device("cpu")
 
     train_dataloader, valid_dataloader = create_dataloaders(
-        gpu,
+        device,
         vocab_src,
         vocab_tgt,
         spacy_de,
@@ -378,7 +385,8 @@ def train_worker(
         # if is_main_process:
         #     file_path = os.path.join(RESULT_DIR, "%s%.2d.pt" % (hyper_params["file_prefix"], epoch))
         #     torch.save(module.state_dict(), file_path)
-        torch.cuda.empty_cache()
+        # use CPU only
+        # torch.cuda.empty_cache()
 
         logger.info(f"[GPU{gpu}] Epoch {epoch} Validation ====")
         model.eval()
@@ -391,7 +399,8 @@ def train_worker(
             mode="eval",
         )
         logger.info(sloss)
-        torch.cuda.empty_cache()
+        # use CPU only
+        # torch.cuda.empty_cache()
 
     if is_main_process:
         torch.save(module.state_dict(), MODEL_PT_FILEPATH)
@@ -418,8 +427,9 @@ def train_model(vocab_src, vocab_tgt, spacy_de, spacy_en, hyper_params):
             vocab_src, vocab_tgt, spacy_de, spacy_en, hyper_params
         )
     else:
+        gpu = None  # to use GPU device, set gpu to GPU Card Index, e.g. 0,1,2 ..; set gpu to None, to use CPU device.
         train_worker(
-            0, 1, vocab_src, vocab_tgt, spacy_de, spacy_en, hyper_params, False
+            gpu, 1, vocab_src, vocab_tgt, spacy_de, spacy_en, hyper_params, False
         )
 
 
