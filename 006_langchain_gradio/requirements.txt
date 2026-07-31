@@ -1,0 +1,16 @@
+langchain==0.3.16
+langchain-community==0.3.16
+langchain-ollama==0.2.2
+ollama==0.4.8
+langgraph==0.4.7
+gradio==5.25.2
+gradio_client==1.8.0
+python-dotenv==1.2.2
+log5
+gradio # Required for the Gradio interface
+pypdf  # Used for PDF handling
+langchain-huggingface  # Required for Hugging Face-based document loaders
+faiss-cpu  # FAISS for vector search
+huggingface-hub  # Required for loading Hugging Face models
+transformers  # Needed for Hugging Face-based embeddings
+sentence-transformers # Needed for Sentence Transformers-based embeddings
