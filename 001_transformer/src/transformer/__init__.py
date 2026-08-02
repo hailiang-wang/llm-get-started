@@ -1,7 +1,7 @@
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#===============================================================================
+# ===============================================================================
 #
 # Copyright (c) 2025 <> All Rights Reserved
 #
@@ -10,7 +10,7 @@
 # Author: Hai Liang Wang
 # Date: 2025-04-17:13:53:42
 #
-#===============================================================================
+# ===============================================================================
 
 """
    
@@ -19,9 +19,10 @@ __copyright__ = "Copyright (c) 2020 . All Rights Reserved"
 __author__ = "Hai Liang Wang"
 __date__ = "2025-04-17:13:53:42"
 
-import os, sys
+import os
+import sys
 curdir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0,os.path.join(curdir, os.pardir))
+sys.path.insert(0, os.path.join(curdir, os.pardir))
 
 if sys.version_info[0] < 3:
     raise RuntimeError("Must be using Python 3")
@@ -33,15 +34,17 @@ from torchinfo import summary
 import copy
 from transformer.network import MultiHeadedAttention, PositionwiseFeedForward, PositionalEncoding, EncoderDecoder, Encoder, EncoderLayer, Decoder, DecoderLayer, Embeddings, Generator
 
-log = lambda x, y: print(x) if y is None else y.info(x)
+
+def log(x, y): return print(x) if y is None else y.info(x)
+
 
 def make_model(
-    src_vocab, 
-    tgt_vocab, 
-    N=6, 
-    d_model=512, 
-    d_ff=2048, 
-    h=8, 
+    src_vocab,
+    tgt_vocab,
+    N=6,
+    d_model=512,
+    d_ff=2048,
+    h=8,
     dropout=0.1,
     logger=None
 ):

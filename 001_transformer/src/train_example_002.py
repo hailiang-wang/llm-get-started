@@ -265,19 +265,19 @@ def build_vocabulary(spacy_de, spacy_en):
         specials=["<s>", "</s>", "<blank>", "<unk>"],
     )
 
-    print("Top 100 English Terms")
+    # print("Top 100 English Terms")
     # eng_order_dict = vocab_tgt.get_stoi()
-    # eng_vocab_term = list( eng_order_dict.keys())
+    # eng_vocab_term = list(eng_order_dict.keys())
     # i = 0
     # for x in eng_vocab_term:
     #     print("term", x, "index", eng_order_dict[x])
     #     i += 1
-    #
-    #     if i > 100:
-    #         break
-    #
-    # print("vocab_tgt.get_itos(100)", vocab_tgt.get_itos()[100])
-    #
+
+    #     # if i > 100:
+    #     #     break
+
+    # # print("vocab_tgt.get_itos(100)", vocab_tgt.get_itos()[100])
+
     # sys.exit()
 
     vocab_src.set_default_index(vocab_src["<unk>"])
