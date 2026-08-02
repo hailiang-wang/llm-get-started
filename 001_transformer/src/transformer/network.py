@@ -411,11 +411,11 @@ class PositionwiseFeedForward(nn.Module):
 
 
 class Embeddings(nn.Module):
-    def __init__(self, d_model, vocab):
+    def __init__(self, d_model, vocab_len):
         super(Embeddings, self).__init__()
 
         # vocab --> 3W 单词的，希望可以：将一句话，输出成 512 维向量
-        self.lut = nn.Embedding(vocab, d_model)
+        self.lut = nn.Embedding(vocab_len, d_model)
         self.d_model = d_model
 
     def forward(self, x):
