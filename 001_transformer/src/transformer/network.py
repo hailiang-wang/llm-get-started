@@ -62,6 +62,7 @@ class EncoderDecoder(nn.Module):
         "Take in and process masked src and target sequences."
         # print("[network] shape of src %s, tgt %s, src_mask %s, tgt_mask %s" %
         #       (src.shape, tgt.shape, src_mask.shape, tgt_mask.shape))
+        # sys.exit()
 
         # print("tgt_mask", tgt_mask)
         # Batch size = 1
@@ -152,6 +153,8 @@ class SublayerConnection(nn.Module):
 
     def forward(self, x, sublayer):
         "Apply residual connection to any sublayer with the same size."
+        # 大模型回归基本功之3 LayerNorm：为什么现代Transformer抛弃了BatchNorm，都用上LayerNorm了？
+        # https://zhuanlan.zhihu.com/p/1985480142802412942
         return x + self.dropout(sublayer(self.norm(x)))
 
 
@@ -167,8 +170,9 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x, mask):
         "Follow Figure 1 (left) for connections."
-        x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask))
-        # x 1x72x512, mask 1x72x1
+        # # x 1x72x512, mask 1x1x72
+        x = self.sublayer[0](x, lambda y: self.self_attn(y, y, y, mask))
+        # x 1x72x512, mask 1x1x72
         return self.sublayer[1](x, self.feed_forward)
 
 

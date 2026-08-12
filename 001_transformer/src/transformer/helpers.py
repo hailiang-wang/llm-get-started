@@ -39,6 +39,7 @@ def subsequent_mask(size):
     "Mask out subsequent positions."
     # print("subsequent_mask size", size)  # 71
     attn_shape = (1, size, size)
+    # https://docs.pytorch.ac.cn/docs/2.10/generated/torch.triu.html
     subsequent_mask = torch.triu(torch.ones(
         attn_shape), diagonal=1).type(torch.uint8)
     return subsequent_mask == 0
@@ -54,6 +55,7 @@ class LayerNorm(nn.Module):
         self.eps = eps
 
     def forward(self, x):
+        # 1x72x512
         mean = x.mean(-1, keepdim=True)  # 0,1,2(-1)
         std = x.std(-1, keepdim=True)
         ret = self.a_2 * (x - mean) / (std + self.eps) + self.b_2

@@ -36,20 +36,27 @@ from transformer.helpers import subsequent_mask
 
 
 class Batch:
-    """Object for holding a batch of data with mask during training."""
+    """Object for holding a batch of data with mask during training.
+    https://zhuanlan.zhihu.com/p/28786272137
+    """
 
     def __init__(self, src, tgt=None, pad=2):  # 2 = <blank>
-        self.src = src
+        self.src = src  # 1x72x512
         self.src_mask = (src != pad).unsqueeze(-2)  # 1x1x72
 
         print("src_mask shape", self.src_mask.shape)
         if tgt is not None:
-            print("tgt shape", tgt.shape)  # 32x72
+            print("tgt shape", tgt.shape)  # 1x72
 
         if tgt is not None:
             # -1 的位置，大部是 <blank> pad; self.tgt 里，是有 <\s>
             self.tgt = tgt[:, :-1]  # 句子的第一个token 是 <s> 开始
-            self.tgt_y = tgt[:, 1:]
+            print("self.tgt shape", self.tgt.shape)
+            # self.tgt shape torch.Size([1, 71])
+            self.tgt_y = tgt[:, 1:]  # <s>
+            print("self.tgt_y shape", self.tgt_y.shape)
+            # self.tgt_y shape torch.Size([1, 71])
+
             # print("self.tgt[0]", self.tgt[0].tolist())
             # print("self.tgt_y[0]", self.tgt_y[0].tolist())
 
@@ -70,17 +77,19 @@ class Batch:
         subsequent_mask_t = subsequent_mask(tgt.size(-1)).type_as(
             tgt_mask.data
         )
-        # print("*" * 80)
-        # print("tgt_mask.shape before subsequent_mask", tgt_mask.shape)
-        # print("tgt_mask before subsequent_mask", tgt_mask)
+        print("*" * 80)
+        print("tgt_mask.shape before subsequent_mask", tgt_mask.shape)
+        print("tgt_mask before subsequent_mask", tgt_mask)
 
-        # print("*" * 80)
+        print("*" * 80)
 
-        # print("subsequent_mask", subsequent_mask_t)
+        print("subsequent_mask", subsequent_mask_t)
         tgt_mask = tgt_mask & subsequent_mask_t
-        # print("tgt_mask.data", tgt_mask.data)
-        # print("*" * 80)
-        # print("tgt_mask.shape after subsequent_mask", tgt_mask.shape)
+        print("tgt_mask.data", tgt_mask.data)
+        print("*" * 80)
+        print("tgt_mask.shape after subsequent_mask", tgt_mask.shape)
+        # print(tgt_mask)
+        # sys.exit(1)
         return tgt_mask
 
 

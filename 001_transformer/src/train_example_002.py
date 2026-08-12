@@ -45,7 +45,7 @@ import GPUtil
 import torch.multiprocessing as mp
 import altair as alt
 
-torch.set_printoptions(edgeitems=2, threshold=50)
+torch.set_printoptions(edgeitems=100, threshold=100)
 
 # Get ENV
 from env import ENV, ENV_LOCAL_RC
@@ -132,6 +132,14 @@ def collate_batch(
             0,
         )
 
+        # print("processed_src shape", processed_src.shape)
+        # print("processed_src", processed_src)
+        # processed_src shape torch.Size([25])
+        # processed_src tensor([   0, 3799,  675,  398,    7,   72,  507,   54,    7,   13,  359,   11,
+        #           13, 1483,    4, 4840, 4572,   50,    7,   16, 1123,   96, 3746,    4,
+        #            1])
+        # sys.exit()
+
         processed_tgt = torch.cat(
             [
                 bs_id,
@@ -144,6 +152,9 @@ def collate_batch(
             ],
             0,
         )
+
+        # 72 = [2](left padding) +  [1,2,3] + [2,2,2...](right padding)
+        # https://docs.pytorch.org/docs/2.13/generated/torch.nn.functional.pad.html
         src_list.append(
             # warning - overwrites values for negative values of padding - len
             pad(
@@ -164,18 +175,20 @@ def collate_batch(
             )
         )
 
-    print("first_src", first_src)
-    print("first_src word2ids", src_list[0].tolist())
-    #
-    print("first_tgt ", first_tgt)
-    print("first_tgt word2ids", tgt_list[0].tolist())
+    # print("first_src", first_src)
+    # print("first_src word2ids", src_list[0].tolist())
+    # #
+    # print("first_tgt ", first_tgt)
+    # print("first_tgt word2ids", tgt_list[0].tolist())
 
     src = torch.stack(src_list)
     tgt = torch.stack(tgt_list)
 
-    print("train example batch src", src.shape)
-    print("train example batch tgt", tgt.shape)
+    # print("train example batch src", src.shape)  # torch.Size([1, 72])
+    # print("train example batch tgt", tgt.shape)  # torch.Size([1, 72])
+    # sys.exit()
 
+    # (Xs, Ys)
     return (src, tgt)
 
 
@@ -197,6 +210,12 @@ def create_dataloaders(
         return tokenize(text, spacy_en)
 
     def collate_fn(batch):
+
+        # print("[collate_fn] batch len", len(batch))
+        # print("batch ", batch)
+        # sys.exit()
+        # batch is a list [(de_sentence, eng sentence), ...]
+
         return collate_batch(
             batch,
             tokenize_de,
@@ -224,6 +243,11 @@ def create_dataloaders(
         DistributedSampler(valid_iter_map) if is_distributed else None
     )
 
+    # print("train_iter_map", len(train_iter_map))  # 29001
+    # print("train_iter_map[0]", train_iter_map[0])
+    # train_iter_map[0] ('Zwei junge weiße Männer sind im Freien in der Nähe vieler Büsche.', 'Two young, White males are outside near many bushes.')
+    # sys.exit()
+
     train_dataloader = DataLoader(
         train_iter_map,
         batch_size=batch_size,
@@ -238,6 +262,14 @@ def create_dataloaders(
         sampler=valid_sampler,
         collate_fn=collate_fn,
     )
+
+    # train_datalist = list(train_dataloader)
+    # print("train_datalist", len(train_datalist))
+    # train_datalist 29001
+    # print("train_datalist[0]", train_datalist[0])
+    # (tensor([[0, 5,  ..., 2, 2]]), tensor([[ 0, 51,  ...,  2,  2]]))
+    # sys.exit()
+
     return train_dataloader, valid_dataloader
 
 
