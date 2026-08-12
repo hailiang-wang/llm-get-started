@@ -250,6 +250,10 @@ def attention(query, key, value, mask=None, dropout=None):
     # decoder key shape # 1x8x71x64
     # 71x64 x 64x71 = 71x71
     # 对于 Encoder 和 Decoder 而言，下面这个公式的运算，形状是类似的
+
+    # 对于 encoder self attention 如下
+    # query 1x8x72x64, key^T 1x8x64x72
+    # scores 1x8x72x72
     scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
 
     if is_decoder_self_attn:
@@ -300,6 +304,9 @@ def attention(query, key, value, mask=None, dropout=None):
     # print("p_attn shape", p_attn.shape) # [1, 8, 72, 72] # 72个词，和72个词之间相互投票
     # print("value shape", value.shape) # [1, 8, 72, 64]
 
+    # 对于 encoder self attation 来说，有如下：
+    # p_attn 1x8x72x72, value 1x8x72x64
+    # 结果：1x8x72x64, 这个形状和 value 的形状是一模一样的
     return torch.matmul(p_attn, value), p_attn
 
 
@@ -345,6 +352,11 @@ class MultiHeadedAttention(nn.Module):
         # 1) Do all the linear projections in batch from d_model => h x d_k
         # x shape 1x72x512, lin shape 512x512
         query, key, value = [
+            # 1x72x512 x 512x512 --> 1x72x512 -view-> 1x[72]x8x(64) -> 1x8x72x64
+            # 72x512 --> 8x(72x64)
+            # 疑问：作者使用下面的方法将一个句子，变成了 8 个角度的观察的张量，从
+            # 原理上看，是通过将每个词拆解成 8 个部分，就是 512 的向量，连续的 64 个，组成一个向量（8 个头）。然后，将每个词的对应的头，重新的分配到一个张量，就得到了 8 个角度。
+            # 有没有更好的，更合理的方案？
             lin(x).view(nbatches, -1, self.h, self.d_k).transpose(1, 2)
             for lin, x in zip(self.linears, (query, key, value))
         ]
