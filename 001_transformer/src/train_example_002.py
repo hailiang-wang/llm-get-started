@@ -363,6 +363,8 @@ def train_worker(
     criterion = LabelSmoothing(
         size=len(vocab_tgt), padding_idx=pad_idx, smoothing=0.1
     )
+    # y^ Label shape 1x71x512 Onehot    [0, 0, 1 ...] --> [0.1, 0.2, 0.9 ...]
+    # y generator output shape 1x71x512 [0.1, 0.02, 0.03 ....]
     # use CPU only
     # criterion.cuda(gpu)
 

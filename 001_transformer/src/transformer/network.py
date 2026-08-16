@@ -112,6 +112,7 @@ class Generator(nn.Module):
     def __init__(self, d_model, vocab):
         super(Generator, self).__init__()
         self.proj = nn.Linear(d_model, vocab)
+        # --> self.proj(x) --> [512] --> torch.argmax([10000]_ --> wordid 4 --> a
 
     def forward(self, x):
         # x shape 1x71x512
@@ -219,6 +220,7 @@ class DecoderLayer(nn.Module):
 
         # sublayer[0] 就是 self attn, 在 self attn 中，如何利用 tgt_mask 信息的？
         x = self.sublayer[0](x, lambda y: self.self_attn(y, y, y, tgt_mask))
+        # torch.Size([1, 71, 512])
 
         # self.sublayer[1] 就是 src attn
         # TODO 为什么在 Decoder 的第二个 Atten 运算中，也就是 src_atten 中，使用了 src_mask?
@@ -250,11 +252,15 @@ def attention(query, key, value, mask=None, dropout=None):
     # decoder key shape # 1x8x71x64
     # 71x64 x 64x71 = 71x71
     # 对于 Encoder 和 Decoder 而言，下面这个公式的运算，形状是类似的
+    scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
 
     # 对于 encoder self attention 如下
     # query 1x8x72x64, key^T 1x8x64x72
     # scores 1x8x72x72
-    scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
+
+    # 对于 decoder src attention 如下
+    # query 1x8x71x64, key^T 1x8x64x72
+    # scores 1x8x71x72
 
     if is_decoder_self_attn:
         pass
@@ -304,10 +310,15 @@ def attention(query, key, value, mask=None, dropout=None):
     # print("p_attn shape", p_attn.shape) # [1, 8, 72, 72] # 72个词，和72个词之间相互投票
     # print("value shape", value.shape) # [1, 8, 72, 64]
 
+    att_result = torch.matmul(p_attn, value)
     # 对于 encoder self attation 来说，有如下：
     # p_attn 1x8x72x72, value 1x8x72x64
-    # 结果：1x8x72x64, 这个形状和 value 的形状是一模一样的
-    return torch.matmul(p_attn, value), p_attn
+    # 结果：p_attn 1x8x72x64, 这个形状和 value 的形状是一模一样的
+
+    # 对于 decoder src attation 来说，有如下：
+    # 结果： p_attn 是 1x8x71x72， value 是 1x8x72x64
+    #       att_result 是 1x8x71x64
+    return att_result, p_attn
 
 
 class MultiHeadedAttention(nn.Module):
@@ -410,6 +421,8 @@ class MultiHeadedAttention(nn.Module):
         del query
         del key
         del value
+
+        # 返回值结果形状 1x71x512
         return self.linears[-1](x)
 
 
