@@ -41,7 +41,7 @@ class Batch:
     """
 
     def __init__(self, src, tgt=None, pad=2):  # 2 = <blank>
-        self.src = src  # 1x72x512
+        self.src = src  # 1x72
         self.src_mask = (src != pad).unsqueeze(-2)  # 1x1x72
 
         # print("src_mask shape", self.src_mask.shape)
@@ -64,6 +64,11 @@ class Batch:
             # print("self.tgt_y", self.tgt_y.shape)
 
             self.tgt_mask = self.make_std_mask(self.tgt, pad)
+
+            print("self.tgt_mask.shape", self.tgt_mask.shape)
+            print("self.tgt_mask", self.tgt_mask)
+            sys.exit()
+
             self.ntokens = (self.tgt_y != pad).data.sum()
             # print("self.ntokens", self.ntokens.item())
 
@@ -85,7 +90,7 @@ class Batch:
         # print("*" * 80)
 
         # print("subsequent_mask", subsequent_mask_t)
-        tgt_mask = tgt_mask & subsequent_mask_t
+        tgt_mask = tgt_mask & subsequent_mask_t  # 用两个条件来计算 tgt 矩阵的遮盖
         # print("tgt_mask.data", tgt_mask.data)
         # print("*" * 80)
         # print("tgt_mask.shape after subsequent_mask", tgt_mask.shape)
@@ -128,7 +133,7 @@ def run_epoch(
         out = model(batch.src, batch.tgt, batch.src_mask, batch.tgt_mask)
         # out shape [1x71x512], tgt_y 是 src 的对应的目标翻译句子， tgt_y shape [1, 71]
         # print("batch.ntokens ", batch.ntokens)
-        # batch.ntokens  tensor(11, device='cuda:0')
+        # batch.ntokens tensor(11, device='cuda:0')
         loss, loss_node = loss_compute(out, batch.tgt_y, batch.ntokens)
         # loss_node = loss_node / accum_iter
         if mode == "train" or mode == "train+log":

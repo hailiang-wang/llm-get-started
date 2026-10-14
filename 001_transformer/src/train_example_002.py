@@ -45,7 +45,7 @@ import GPUtil
 import torch.multiprocessing as mp
 import altair as alt
 
-torch.set_printoptions(edgeitems=100, threshold=100)
+torch.set_printoptions(edgeitems=20, threshold=100)
 
 # Get ENV
 from env import ENV, ENV_LOCAL_RC
@@ -109,6 +109,10 @@ def collate_batch(
     max_padding=128,
     pad_id=2,
 ):
+    '''
+    将 (src_text, tgt_text) 转化为 (src_wordid_list, tgt_wordid_list)
+    比如， src_text = I am from China --> src_wordid_list = [5, 6, 10, 99] -pad 72-> [0, 5, 6, 10, 99, 1, 2, ... 后面有 65 个 2 ]
+    '''
     bs_id = torch.tensor([0], device=device)  # <s> token id
     eos_id = torch.tensor([1], device=device)  # </s> token id
     src_list, tgt_list = [], []
@@ -121,13 +125,13 @@ def collate_batch(
 
         processed_src = torch.cat(
             [
-                bs_id,
+                bs_id,  # 0
                 torch.tensor(
                     src_vocab(src_pipeline(_src)),
                     dtype=torch.int64,
                     device=device,
                 ),
-                eos_id,
+                eos_id,  # 1
             ],
             0,
         )
@@ -163,7 +167,7 @@ def collate_batch(
                     0,
                     max_padding - len(processed_src),
                 ),
-                value=pad_id,
+                value=pad_id,  # 2
             )
         )
 
@@ -249,11 +253,11 @@ def create_dataloaders(
     # sys.exit()
 
     train_dataloader = DataLoader(
-        train_iter_map,
-        batch_size=batch_size,
+        train_iter_map,  # list(29001(de_text, en_text))
+        batch_size=batch_size,  # train_iter_map --> 变成了小批量数据
         shuffle=(train_sampler is None),
         sampler=train_sampler,
-        collate_fn=collate_fn,
+        collate_fn=collate_fn,  # train_iter_map 的小批量数据转换为 --> 张量
     )
     valid_dataloader = DataLoader(
         valid_iter_map,
@@ -289,8 +293,13 @@ def build_vocabulary(spacy_de, spacy_en):
         specials=["<s>", "</s>", "<blank>", "<unk>"],
     )
 
+    # print(len(train))
+    # print(train[0])
+    # sys.exit()
+
     logger.info("Building English Vocabulary ...")
     train, val, test = datasets.Multi30k(language_pair=("de", "en"))
+
     vocab_tgt = build_vocab_from_iterator(
         yield_tokens(train + val + test, tokenize_en, index=1),
         min_freq=2,
@@ -305,10 +314,10 @@ def build_vocabulary(spacy_de, spacy_en):
     #     print("term", x, "index", eng_order_dict[x])
     #     i += 1
 
-    #     # if i > 100:
-    #     #     break
+    #     if i > 100:
+    #         break
 
-    # # print("vocab_tgt.get_itos(100)", vocab_tgt.get_itos()[100])
+    # print("vocab_tgt.get_itos(100)", vocab_tgt.get_itos()[100])
 
     # sys.exit()
 
@@ -319,6 +328,7 @@ def build_vocabulary(spacy_de, spacy_en):
 
 
 def load_vocab(spacy_de, spacy_en):
+    logger.info(">> VOCAB_PT_FILEPATH %s" % VOCAB_PT_FILEPATH)
     if not exists(VOCAB_PT_FILEPATH):
         vocab_src, vocab_tgt = build_vocabulary(spacy_de, spacy_en)
         torch.save((vocab_src, vocab_tgt), VOCAB_PT_FILEPATH)
@@ -374,9 +384,9 @@ def train_worker(
 
     train_dataloader, valid_dataloader = create_dataloaders(
         device,
-        vocab_src,
+        vocab_src,  # vocab
         vocab_tgt,
-        spacy_de,
+        spacy_de,  # tokenizer
         spacy_en,
         batch_size=hyper_params["batch_size"] // ngpus_per_node,
         max_padding=hyper_params["max_padding"],
@@ -563,6 +573,12 @@ def run_model_example(vocab_src, vocab_tgt, spacy_de, spacy_en, device="cpu", n_
 
 def main():
     spacy_de, spacy_en = load_tokenizers()
+    # 映射单词(word)到索引（id）
+    # vocab 实现 word 和 id 之间的转换，比如在英语当中，
+    # [I, want, some, juice] --> I(0), want(1), some(2), juice(3)
+    # 在 transformer 算法当中，每个词都有对应的数字作为 id
+    # word <-vocab-> id -embeding-> 词向量
+    # 词向量 - argmax 求索引-> id
     vocab_src, vocab_tgt = load_vocab(spacy_de, spacy_en)
     model = load_trained_model(vocab_src, vocab_tgt, spacy_de, spacy_en)
 

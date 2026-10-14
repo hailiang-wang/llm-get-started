@@ -444,6 +444,7 @@ class Embeddings(nn.Module):
         super(Embeddings, self).__init__()
 
         # vocab --> 3W 单词的，希望可以：将一句话，输出成 512 维向量
+        # https://docs.pytorch.ac.cn/docs/2.10/generated/torch.nn.Embedding.html
         self.lut = nn.Embedding(vocab_len, d_model)
         self.d_model = d_model
 
